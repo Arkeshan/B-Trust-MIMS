@@ -1,4 +1,3 @@
-![Uploading Library Loan Management-2026-08-23-192138.png…]()
 # B-Trust Microbanking and Interest Management System
 
 ## Current Goal
