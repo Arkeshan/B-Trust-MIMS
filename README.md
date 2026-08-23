@@ -1,7 +1,10 @@
 # B-Trust Microbanking and Interest Management System
 
 ## Current Goal
- Build homepage, login, and signup screens.
+ Starting the Database Part
+
+## Finished Goals
+
 ## Tech Stack
  Next.js (Frontend), Go (Backend), MySQL (Database).
 ## Folder Guide: 
