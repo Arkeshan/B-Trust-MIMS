@@ -3,7 +3,7 @@
 ## Current Goal
  Build homepage, login, and signup screens.
 ## Tech Stack
- Next.js (Frontend), Go (Backend), PostgreSQL (Database).
+ Next.js (Frontend), Go (Backend), MySQL (Database).
 ## Folder Guide: 
 /frontend is for UI, /backend is for APIs.
 /backend for SQL Queries
