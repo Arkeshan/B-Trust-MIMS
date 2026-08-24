@@ -7,15 +7,16 @@ CREATE TABLE USER_ACCOUNT(
     last_login DATETIME,
     PRIMARY KEY(username)
 );
+
 Create Table Branch(
     branch_id   int auto_increment PRIMARY KEY,
     branch_name varchar(100) not null,
     address     varchar(255) not null,
-    phone_number varchar(20) not null,
+    phone_number varchar(20) not null
 
     
 
-)ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);
 
 CREATE TABLE PERSON (
     person_id INT PRIMARY KEY,
@@ -50,3 +51,13 @@ VALUES
     ('Adult', 10.00, 1000.00),
     ('Senior', 13.00, 1000.00),
     ('Joint', 7.00, 5000.00);
+
+CREATE TABLE USER_ACCOUNT(
+    username varchar(50),
+    password_hash varchar(255) NOT NULL,
+    email varchar(255) NOT NULL UNIQUE,
+    type ENUM('customer','staff','admin') NOT NULL,
+    status ENUM('active','locked') NOT NULL,
+    last_login DATETIME,
+    PRIMARY KEY(username)
+);
