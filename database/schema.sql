@@ -6,7 +6,7 @@ CREATE TABLE USER_ACCOUNT (
     username VARCHAR(50) PRIMARY KEY,
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
-    type ENUM('customer', 'staff', 'admin') NOT NULL, --CUSTOMER = CUSTOMER, STAFF = AGENT, ADMIN = BANK
+    type ENUM('customer', 'staff', 'admin') NOT NULL, -- CUSTOMER = CUSTOMER, STAFF = AGENT, ADMIN = BANK
     status ENUM('active', 'locked') NOT NULL,
     last_login DATETIME
 );
@@ -53,7 +53,7 @@ CREATE TABLE FD_PLAN (
 
 CREATE TABLE STAFF (
     person_id INT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE, --made it unique
+    username VARCHAR(50) NOT NULL UNIQUE,
     branch_id INT NOT NULL,
     role ENUM('agent') NOT NULL DEFAULT 'agent',
     FOREIGN KEY (person_id) REFERENCES PERSON(person_id),
@@ -64,7 +64,7 @@ CREATE TABLE STAFF (
 
 CREATE TABLE CUSTOMER (
     person_id INT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE, --MADE it unique
+    username VARCHAR(50) NOT NULL UNIQUE,
     assigned_agent_person_id INT,
     guardian_person_id INT,
     registered_branch_id INT NOT NULL,
