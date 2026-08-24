@@ -5,8 +5,8 @@
 CREATE TABLE USER_ACCOUNT (
     username VARCHAR(50) PRIMARY KEY,
     password_hash VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    type ENUM('customer', 'staff', 'admin') NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    type ENUM('customer', 'staff', 'admin') NOT NULL, --CUSTOMER = CUSTOMER, STAFF = AGENT, ADMIN = BANK
     status ENUM('active', 'locked') NOT NULL,
     last_login DATETIME
 );
@@ -15,11 +15,11 @@ CREATE TABLE PERSON (
     person_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    nic VARCHAR(20), 
+    nic VARCHAR(12) UNIQUE, 
     dob DATE NOT NULL,
-    phone_number VARCHAR(15),
-    address VARCHAR(255),
-    city VARCHAR(100)
+    phone_number VARCHAR(10) CHECK (phone_number REGEXP '^[0-9]{10}$'),
+    address VARCHAR(255) NOT NULL,
+    city VARCHAR(100) NOT NULL
 );
 
 CREATE TABLE BRANCH (
@@ -34,7 +34,7 @@ CREATE TABLE ACCOUNT_PLAN (
     plan_name VARCHAR(30) NOT NULL UNIQUE,
     interest_rate DECIMAL(5,2) NOT NULL,
     min_balance DECIMAL(12,2) NOT NULL DEFAULT 0.00,
-    CONSTRAINT chk_account_plan_interest CHECK (interest_rate >= 0 AND interest_rate <= 100),
+    CONSTRAINT chk_account_plan_interest CHECK (interest_rate >= 0 AND interest_rate < 100),
     CONSTRAINT chk_account_plan_min_balance CHECK (min_balance >= 0)
 );
 
@@ -43,7 +43,7 @@ CREATE TABLE FD_PLAN (
     interest_rate DECIMAL(5,2) NOT NULL,
     term_months INT NOT NULL,
     CONSTRAINT chk_term_months CHECK (term_months IN (6, 12, 36)),
-    CONSTRAINT chk_interest_rate CHECK (interest_rate > 0),
+    CONSTRAINT chk_interest_rate CHECK (interest_rate > 0 AND interest_rate < 100),
     CONSTRAINT uq_term_months UNIQUE (term_months)
 );
 
