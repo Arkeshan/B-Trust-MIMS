@@ -53,17 +53,18 @@ CREATE TABLE FD_PLAN (
 
 CREATE TABLE STAFF (
     person_id INT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE, --made it unique
     branch_id INT NOT NULL,
-    role VARCHAR(50) NOT NULL,
+    role ENUM('agent') NOT NULL DEFAULT 'agent',
     FOREIGN KEY (person_id) REFERENCES PERSON(person_id),
     FOREIGN KEY (username) REFERENCES USER_ACCOUNT(username),
     FOREIGN KEY (branch_id) REFERENCES BRANCH(branch_id)
 );
 
+
 CREATE TABLE CUSTOMER (
     person_id INT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL UNIQUE, --MADE it unique
     assigned_agent_person_id INT,
     guardian_person_id INT,
     registered_branch_id INT NOT NULL,
