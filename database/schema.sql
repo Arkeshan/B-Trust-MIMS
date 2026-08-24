@@ -18,7 +18,7 @@ Create Table Branch(
 )ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE PERSON (
-    person_id INT PRIMARY KEY,
+    person_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
     nic VARCHAR(20), 
