@@ -18,6 +18,7 @@ var reportViews = map[string]string{
 
 func ReportsHandler(db *sql.DB) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
+		response.Header().Set("Access-Control-Allow-Origin", "*")
 		if request.Method != http.MethodGet {
 			writeReportError(response, http.StatusMethodNotAllowed, "method not allowed")
 			return
