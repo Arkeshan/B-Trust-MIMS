@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // enableCORS allows frontend requests from Next.js on localhost:3000
@@ -50,9 +51,23 @@ func main() {
 		log.Fatal("Error pinging database: ", err)
 	}
 
+	// Cleanly delete any old rows first, then insert a fresh valid user
+	_, _ = db.Exec("DELETE FROM USER_ACCOUNT WHERE username = ?", "agent_achira")
+
+	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	_, err = db.Exec(`
+		INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
+		VALUES (?, ?, ?, ?, ?)`,
+		"agent_achira", string(hashedPwd), "achira@btrust.com", "staff", "active",
+	)
+	if err != nil {
+		log.Println("Warning: Could not seed test user:", err)
+	}
+
 	// Endpoints wrapped with CORS
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
+	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
