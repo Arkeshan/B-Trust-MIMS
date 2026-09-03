@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async rewrites() {
+    return [
+      {
+        // Intercept any frontend requests starting with /api/
+        source: "/api/:path*",
+        // Secretly route them to your Go backend
+        destination: "http://localhost:8080/api/:path*",
+      },
+    ];
+  },
 };
 
 export default nextConfig;
