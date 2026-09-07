@@ -1,9 +1,10 @@
 # B-Trust Microbanking and Interest Management System
 
 ## Current Goal
- Starting the Database Part
+ Creating somewhat Front end and Backent
 
 ## Finished Goals
+Created basic layout of Frontend,Backend and Database
 
 ## Tech Stack
  Next.js (Frontend), Go (Backend), MySQL (Database).
