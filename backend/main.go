@@ -89,7 +89,13 @@ func main() {
 	// 3. Register routes + their incoming routes
 	http.HandleFunc("/", homePage)
 	http.Handle("/api/account/", AccountHistoryHandler(db))
-	http.Handle("/api/reports/", ReportsHandler(db)) // Your new dashboard route
+	http.Handle("/api/reports/", ReportsHandler(db))
+
+	// Fixed Deposit routes
+	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
+	http.HandleFunc("/api/fd/new", enableCORS(OpenFDHandler(db)))
+	http.HandleFunc("/api/fd/list", enableCORS(ListFDHandler(db)))
+	http.HandleFunc("/api/cron/interest", enableCORS(CronInterestHandler(db)))
 
 	// Incoming transaction and auth routes
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
