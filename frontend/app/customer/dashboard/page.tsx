@@ -14,6 +14,7 @@ type Transaction = {
 type AccountHistory = {
   account_no: string;
   balance: number;
+  has_more: boolean;
   transactions: Transaction[];
 };
 
@@ -69,6 +70,32 @@ export default function CustomerDashboard() {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadMore(accountNo: string, currentLength: number) {
+    try {
+      const response = await fetch(
+        `/api/account/${encodeURIComponent(accountNo)}/history?offset=${currentLength}`
+      );
+      if (!response.ok) throw new Error("unable to load older history");
+      const data = (await response.json()) as AccountHistory;
+
+      setAccounts((prev) =>
+        prev.map((acc) => {
+          if (acc.account_no === accountNo) {
+            return {
+              ...acc,
+              has_more: data.has_more,
+              transactions: [...acc.transactions, ...data.transactions],
+            };
+          }
+          return acc;
+        })
+      );
+    } catch (e) {
+      console.error(e);
+      alert("Failed to load older transactions.");
     }
   }
 
@@ -197,6 +224,18 @@ export default function CustomerDashboard() {
                   <p className="pt-4 text-sm text-slate-400">
                     No transactions found.
                   </p>
+                )}
+                
+                {account.has_more && (
+                  <div className="mt-6 flex justify-center border-t border-slate-800 pt-6">
+                    <button
+                      type="button"
+                      onClick={() => loadMore(account.account_no, account.transactions.length)}
+                      className="px-5 py-2 text-sm font-medium text-cyan-300 border border-slate-700 rounded bg-slate-800/50 hover:bg-slate-800 transition"
+                    >
+                      Load Older Transactions
+                    </button>
+                  </div>
                 )}
               </div>
             </article>
