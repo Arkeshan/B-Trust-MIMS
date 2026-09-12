@@ -146,6 +146,7 @@ CREATE TABLE TRANSACTION (
     amount DECIMAL(15,2) NOT NULL,
     balance_after DECIMAL(15,2) NOT NULL,
     timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reference_no VARCHAR(100),
     FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no),
     FOREIGN KEY (staff_person_id) REFERENCES STAFF(person_id)
 );

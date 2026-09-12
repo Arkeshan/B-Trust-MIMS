@@ -1,4 +1,4 @@
---(how many transactions each agent process) 
+-- (how many transactions each agent process) 
 CREATE OR REPLACE VIEW vw_agent_transaction_summary AS
 SELECT
     s.person_id            AS agent_person_id,
@@ -14,7 +14,7 @@ WHERE s.role = 'agent'
 GROUP BY s.person_id, p.first_name, p.last_name, s.branch_id;
 
 
---(summing up the total deposits and withdrawals)
+-- (summing up the total deposits and withdrawals)
 CREATE OR REPLACE VIEW vw_account_transaction_summary AS
 SELECT
     sa.account_no,
@@ -29,7 +29,7 @@ LEFT JOIN TRANSACTION t ON t.account_no = sa.account_no
 GROUP BY sa.account_no, sa.balance, sa.status;
 
 
---(calculate maturity dates and expected interest payouts for active fixed deposits)
+-- (calculate maturity dates and expected interest payouts for active fixed deposits)
 CREATE OR REPLACE VIEW vw_active_fd_payouts AS
 SELECT
     fd.fd_acc_no,
@@ -46,7 +46,7 @@ JOIN SAVINGS_ACCOUNT sa ON sa.account_no = fd.account_no
 WHERE sa.status = 'active';
 
 
---(tells that which accout types are costing them the most in iterest payouts each month)
+-- (tells that which accout types are costing them the most in iterest payouts each month)
 CREATE OR REPLACE VIEW vw_monthly_interest_by_account_type AS
 SELECT
     ap.plan_name,
@@ -60,7 +60,7 @@ WHERE t.txn_type = 'interest'
 GROUP BY ap.plan_name, DATE_FORMAT(t.timestamp, '%Y-%m');
 
 
---(this creats a summary of customer engagement)
+-- (this creats a summary of customer engagement)
 CREATE OR REPLACE VIEW vw_customer_activity AS
 SELECT
     c.person_id AS customer_person_id,

@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// 2. Construct the connection string securely
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error connecting to database: ", err)
@@ -71,13 +71,15 @@ func main() {
 		log.Fatal("Error pinging database: ", err)
 	}
 
-	// Cleanly delete any old rows first, then insert a fresh valid test user
-	_, _ = db.Exec("DELETE FROM USER_ACCOUNT WHERE username = ?", "agent_achira")
-
 	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 	_, err = db.Exec(`
         INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
-        VALUES (?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			password_hash = VALUES(password_hash),
+			email = VALUES(email),
+			type = VALUES(type),
+			status = VALUES(status)`,
 		"agent_achira", string(hashedPwd), "achira@btrust.com", "staff", "active",
 	)
 	if err != nil {

@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strings"
 	"time"
-	
 )
 
 type AccountHistory struct {
@@ -25,9 +25,17 @@ type Transaction struct {
 	ReferenceNo     string    `json:"reference_no"`
 }
 
-// AccountHistoryHandler returns a handler with its database dependency supplied by the caller.
 func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
+		response.Header().Set("Access-Control-Allow-Origin", "*")
+		response.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		response.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if request.Method == http.MethodOptions {
+			response.WriteHeader(http.StatusOK)
+			return
+		}
+
 		if request.Method != http.MethodGet {
 			writeAccountError(response, http.StatusMethodNotAllowed, "method not allowed")
 			return
@@ -42,23 +50,25 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 		var history AccountHistory
 		err := db.QueryRowContext(request.Context(), `
 			SELECT account_no, balance
-			FROM SAVINGS_ACCOUNT
+			FROM savings_account
 			WHERE account_no = ?`, accountNo).Scan(&history.AccountNo, &history.Balance)
 		if errors.Is(err, sql.ErrNoRows) {
 			writeAccountError(response, http.StatusNotFound, "account not found")
 			return
 		}
 		if err != nil {
+			log.Println("Error fetching account:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch account")
 			return
 		}
 
 		rows, err := db.QueryContext(request.Context(), `
-			SELECT txn_id, txn_type, amount, balance_after, timestamp, reference_no
-			FROM TRANSACTION
+			SELECT txn_id, txn_type, amount, balance_after, timestamp, '' AS reference_no
+			FROM transaction
 			WHERE account_no = ?
 			ORDER BY timestamp DESC, txn_id DESC`, accountNo)
 		if err != nil {
+			log.Println("Error fetching transactions:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch transactions")
 			return
 		}
@@ -75,18 +85,22 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 				&transaction.Timestamp,
 				&transaction.ReferenceNo,
 			); err != nil {
+				log.Println("Error scanning transaction row:", err)
 				writeAccountError(response, http.StatusInternalServerError, "could not read transaction")
 				return
 			}
 			history.Transactions = append(history.Transactions, transaction)
 		}
+
 		if err := rows.Err(); err != nil {
+			log.Println("Row iteration error:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not read transactions")
 			return
 		}
 
 		response.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(response).Encode(history); err != nil {
+			log.Println("JSON encoding error:", err)
 			return
 		}
 	}
@@ -103,5 +117,3 @@ func accountNumberFromPath(path string) string {
 func writeAccountError(response http.ResponseWriter, status int, message string) {
 	http.Error(response, message, status)
 }
-
-
