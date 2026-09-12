@@ -93,6 +93,11 @@ func main() {
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
 
+	// Customer transfer and account lookup routes
+	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
+	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
+	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
+
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
