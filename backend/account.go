@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"fmt"
+	
 )
 
 type AccountHistory struct {
@@ -104,6 +104,4 @@ func writeAccountError(response http.ResponseWriter, status int, message string)
 	http.Error(response, message, status)
 }
 
-func getAccountHistory(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "Account history endpoint works!")
-}
+

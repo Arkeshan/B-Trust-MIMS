@@ -86,7 +86,7 @@ func main() {
 
 	// 3. Register routes + their incoming routes
 	http.HandleFunc("/", homePage)
-	http.HandleFunc("/api/account/history", getAccountHistory)
+	http.Handle("/api/account/", AccountHistoryHandler(db))
 	http.Handle("/api/reports/", ReportsHandler(db)) // Your new dashboard route
 
 	// Incoming transaction and auth routes
