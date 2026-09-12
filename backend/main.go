@@ -16,7 +16,8 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "B-Trust Backend is running!")
 }
 
-// enableCORS allows frontend requests from Next.js on localhost:3000
+// $$$ Enable CORS Middleware $$$
+// Configures cross-origin headers for frontend requests.
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -33,7 +34,7 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 }
 
 func main() {
-	// 1. Load the hidden variables from the .env file
+	// $$$ 1. Load Environment Configuration $$$
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file: ", err)
@@ -45,7 +46,6 @@ func main() {
 	dbPort := os.Getenv("DB_PORT")
 	dbName := os.Getenv("DB_NAME")
 
-	// Fallbacks just in case your .env is missing the new fields
 	if dbUser == "" {
 		dbUser = "root"
 	}
@@ -59,7 +59,7 @@ func main() {
 		dbName = "btrust"
 	}
 
-	// 2. Construct the connection string securely
+	// $$$ 2. Connect to MySQL Database $$$
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
@@ -71,7 +71,7 @@ func main() {
 		log.Fatal("Error pinging database: ", err)
 	}
 
-	// Cleanly delete any old rows first, then insert a fresh valid test user
+	// $$$ 3. Seed Development Test User $$$
 	_, _ = db.Exec("DELETE FROM USER_ACCOUNT WHERE username = ?", "agent_achira")
 
 	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
@@ -84,16 +84,16 @@ func main() {
 		log.Println("Warning: Could not seed test user:", err)
 	}
 
-	// 3. Register your routes + their incoming routes
+	// $$$ 4. Register HTTP Route Handlers $$$
 	http.HandleFunc("/", homePage)
-	http.Handle("/api/reports/", ReportsHandler(db)) // Your new dashboard route
+	http.Handle("/api/reports/", ReportsHandler(db))
 
-	// Incoming transaction and auth routes
+	// Transaction & authentication routes
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
 
-	// Customer transfer and account lookup routes
+	// Customer transfer & lookup routes
 	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
