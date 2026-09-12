@@ -27,7 +27,7 @@ const currency = new Intl.NumberFormat("en-LK", { style: "currency", currency: "
 const formatDate = (val: string) => (!val || Number.isNaN(new Date(val).getTime()) ? val : new Date(val).toLocaleDateString());
 
 // Updated colors for the Net Change column to look good on a white background
-const COLUMNS: Record<ReportType, { header: string; render: (row: any) => React.ReactNode }> = {
+const COLUMNS: Record<ReportType, { header: string; render: (row: any) => React.ReactNode }[]> = {
   agents: [
     { header: "Agent", render: (r: AgentSummary) => <span className="font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
     { header: "Branch", render: (r: AgentSummary) => r.branch_id },
