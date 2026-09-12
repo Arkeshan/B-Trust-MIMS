@@ -30,6 +30,7 @@ type CustomerTransferResponse struct {
 	Amount           decimal.Decimal `json:"amount"`
 	SenderNewBalance decimal.Decimal `json:"sender_new_balance"`
 	Timestamp        time.Time       `json:"timestamp"`
+	Remarks          string          `json:"remarks,omitempty"`
 }
 
 // $$$ Generate Transfer Reference $$$
@@ -94,6 +95,16 @@ func CustomerTransferHandler(db *sql.DB) http.HandlerFunc {
 			_ = json.NewEncoder(w).Encode(map[string]string{
 				"status":  "error",
 				"message": "Transfer amount must be greater than zero.",
+			})
+			return
+		}
+
+		if req.Remarks != "" && len(req.Remarks) < 3 {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"status":  "error",
+				"message": "Remarks must be at least 3 characters if provided.",
 			})
 			return
 		}
@@ -215,13 +226,20 @@ func CustomerTransferHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// $$$ 8. Fetch Updated Sender Balance $$$
+		// $$$ 8. Fetch Updated Sender Balance & SQL Timestamp $$$
 		var updatedSenderBalance decimal.Decimal
 		err = tx.QueryRowContext(r.Context(),
 			"SELECT balance FROM SAVINGS_ACCOUNT WHERE account_no = ?", req.FromAccount).Scan(&updatedSenderBalance)
 		if err != nil {
 			http.Error(w, "Failed to verify new balance", http.StatusInternalServerError)
 			return
+		}
+
+		var dbTimestamp time.Time
+		err = tx.QueryRowContext(r.Context(),
+			"SELECT timestamp FROM TRANSACTION WHERE reference_no = ? ORDER BY txn_id ASC LIMIT 1", refNo).Scan(&dbTimestamp)
+		if err != nil {
+			dbTimestamp = time.Now()
 		}
 
 		// $$$ 9. Commit Transaction & Return Receipt $$$
@@ -241,7 +259,8 @@ func CustomerTransferHandler(db *sql.DB) http.HandlerFunc {
 			ToAccount:        req.ToAccount,
 			Amount:           req.Amount,
 			SenderNewBalance: updatedSenderBalance,
-			Timestamp:        time.Now(),
+			Timestamp:        dbTimestamp,
+			Remarks:          req.Remarks,
 		})
 	}
 }

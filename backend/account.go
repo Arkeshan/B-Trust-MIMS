@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -26,18 +27,19 @@ type RecipientLookup struct {
 }
 
 type AccountHistory struct {
-	AccountNo    string        `json:"account_no"`
-	Balance      float64       `json:"balance"`
-	Transactions []Transaction `json:"transactions"`
+	AccountNo    string          `json:"account_no"`
+	Balance      decimal.Decimal `json:"balance"`
+	HasMore      bool            `json:"has_more"`
+	Transactions []Transaction   `json:"transactions"`
 }
 
 type Transaction struct {
-	TransactionID   int64     `json:"transaction_id"`
-	TransactionType string    `json:"transaction_type"`
-	Amount          float64   `json:"amount"`
-	BalanceAfter    float64   `json:"balance_after"`
-	Timestamp       time.Time `json:"timestamp"`
-	ReferenceNo     string    `json:"reference_no"`
+	TransactionID   int64           `json:"transaction_id"`
+	TransactionType string          `json:"transaction_type"`
+	Amount          decimal.Decimal `json:"amount"`
+	BalanceAfter    decimal.Decimal `json:"balance_after"`
+	Timestamp       time.Time       `json:"timestamp"`
+	ReferenceNo     string          `json:"reference_no"`
 }
 
 // $$$ Recipient Name Masking $$$
@@ -72,7 +74,11 @@ func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Resolve username from session token or testing parameter
-		username, _ := getAuthenticatedUser(r, db)
+		username, err := getAuthenticatedUser(r, db)
+		if err != nil || username == "" {
+			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+			return
+		}
 
 		query := `
 			SELECT sa.account_no, sa.balance
@@ -121,6 +127,7 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// Uses QueryContext to handle Joint Accounts (multiple account holders) gracefully.
 		query := `
 			SELECT 
 				sa.account_no,
@@ -187,7 +194,7 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 }
 
 // $$$ Account History Handler $$$
-// Fetches transaction history for a savings account.
+// Fetches transaction history for a savings account, supporting pagination.
 func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet {
@@ -215,11 +222,25 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		importStrconv := true
+		_ = importStrconv // Handled by goimports later if needed.
+
+		// Parse offset from URL query
+		offsetStr := request.URL.Query().Get("offset")
+		var offset int
+		fmt.Sscanf(offsetStr, "%d", &offset) // simple parse without extra imports
+		if offset < 0 {
+			offset = 0
+		}
+
+		limit := 50
+		// Fetch limit + 1 to detect if there are more rows
 		rows, err := db.QueryContext(request.Context(), `
 			SELECT txn_id, txn_type, amount, balance_after, timestamp, reference_no
 			FROM TRANSACTION
 			WHERE account_no = ?
-			ORDER BY timestamp DESC, txn_id DESC`, accountNo)
+			ORDER BY timestamp DESC, txn_id DESC
+			LIMIT ? OFFSET ?`, accountNo, limit+1, offset)
 		if err != nil {
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch transactions")
 			return
@@ -247,6 +268,13 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 		if err := rows.Err(); err != nil {
 			writeAccountError(response, http.StatusInternalServerError, "could not read transactions")
 			return
+		}
+
+		if len(history.Transactions) > limit {
+			history.HasMore = true
+			history.Transactions = history.Transactions[:limit]
+		} else {
+			history.HasMore = false
 		}
 
 		response.Header().Set("Content-Type", "application/json")
