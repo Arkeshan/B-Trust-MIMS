@@ -104,6 +104,10 @@ func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc {
 			}
 			accounts = append(accounts, acc)
 		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, "Error iterating account rows", http.StatusInternalServerError)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(accounts)
@@ -162,6 +166,10 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 			if firstName != "" || lastName != "" {
 				maskedHolders = append(maskedHolders, maskName(firstName, lastName))
 			}
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, "Error iterating lookup rows", http.StatusInternalServerError)
+			return
 		}
 
 		if !found {
