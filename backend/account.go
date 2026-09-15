@@ -5,35 +5,32 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
-
 	"github.com/shopspring/decimal"
 )
 
-// $$$ Account Models $$$
-// Model for customer account dropdown selection.
-type CustomerAccount struct {
+type CustomerAccount struct{
 	AccountNo string          `json:"account_no"`
 	Balance   decimal.Decimal `json:"balance"`
 }
 
-// Model for recipient verification confirmation.
-type RecipientLookup struct {
+type RecipientLookup struct{
 	AccountNo  string `json:"account_no"`
 	MaskedName string `json:"masked_name"`
 	Status     string `json:"status"`
 }
 
-type AccountHistory struct {
+type AccountHistory struct{
 	AccountNo    string          `json:"account_no"`
 	Balance      decimal.Decimal `json:"balance"`
 	HasMore      bool            `json:"has_more"`
 	Transactions []Transaction   `json:"transactions"`
 }
 
-type Transaction struct {
+type Transaction struct{
 	TransactionID   int64           `json:"transaction_id"`
 	TransactionType string          `json:"transaction_type"`
 	Amount          decimal.Decimal `json:"amount"`
@@ -42,20 +39,18 @@ type Transaction struct {
 	ReferenceNo     string          `json:"reference_no"`
 }
 
-// $$$ Recipient Name Masking $$$
-// Formats full name into privacy-preserving format: F*** L***
-func maskName(first, last string) string {
+func maskName(first, last string) string{
 	first = strings.TrimSpace(first)
 	last = strings.TrimSpace(last)
 	maskedFirst := ""
 	if len(first) > 0 {
-		maskedFirst = string([]rune(first)[0]) + "***"
+		maskedFirst = string([]rune(first)[0])+ "***"
 	}
 	maskedLast := ""
 	if len(last) > 0 {
 		maskedLast = string([]rune(last)[0]) + "***"
 	}
-	if maskedFirst != "" && maskedLast != "" {
+	if maskedFirst != "" && maskedLast != ""{
 		return maskedFirst + " " + maskedLast
 	}
 	if maskedFirst != "" {
@@ -64,18 +59,15 @@ func maskName(first, last string) string {
 	return maskedLast
 }
 
-// $$$ Customer Accounts Handler $$$
-// Returns all active savings accounts owned by the authenticated customer.
-func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc {
+func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		// Resolve username from session token or testing parameter
 		username, err := getAuthenticatedUser(r, db)
-		if err != nil || username == "" {
+		if err != nil || username == ""{
 			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
 			return
 		}
@@ -96,15 +88,15 @@ func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc {
 		defer rows.Close()
 
 		accounts := make([]CustomerAccount, 0)
-		for rows.Next() {
+		for rows.Next(){
 			var acc CustomerAccount
-			if err := rows.Scan(&acc.AccountNo, &acc.Balance); err != nil {
+			if err := rows.Scan(&acc.AccountNo, &acc.Balance); err != nil{
 				http.Error(w, "Error reading account row", http.StatusInternalServerError)
 				return
 			}
-			accounts = append(accounts, acc)
+			accounts=append(accounts, acc)
 		}
-		if err := rows.Err(); err != nil {
+		if err := rows.Err(); err!=nil{
 			http.Error(w, "Error iterating account rows", http.StatusInternalServerError)
 			return
 		}
@@ -114,16 +106,14 @@ func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// $$$ Recipient Lookup Handler $$$
-// Validates destination account existence and returns masked holder name.
-func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
+func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		accountNo := strings.TrimSpace(r.URL.Query().Get("account_no"))
+		accountNo :=strings.TrimSpace(r.URL.Query().Get("account_no"))
 		if accountNo == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
@@ -131,7 +121,6 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Uses QueryContext to handle Joint Accounts (multiple account holders) gracefully.
 		query := `
 			SELECT 
 				sa.account_no,
@@ -144,7 +133,7 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 			WHERE sa.account_no = ?`
 
 		rows, err := db.QueryContext(r.Context(), query, accountNo)
-		if err != nil {
+		if err != nil{
 			http.Error(w, "Database lookup error", http.StatusInternalServerError)
 			return
 		}
@@ -154,7 +143,7 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 		var maskedHolders []string
 		found := false
 
-		for rows.Next() {
+		for rows.Next(){
 			found = true
 			var accNo, status, firstName, lastName string
 			if err := rows.Scan(&accNo, &status, &firstName, &lastName); err != nil {
@@ -181,7 +170,7 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if resp.Status != "active" {
+		if resp.Status != "active"{
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			_ = json.NewEncoder(w).Encode(map[string]string{
@@ -201,10 +190,17 @@ func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// $$$ Account History Handler $$$
-// Fetches transaction history for a savings account, supporting pagination.
-func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
+func AccountHistoryHandler(db *sql.DB) http.HandlerFunc{
 	return func(response http.ResponseWriter, request *http.Request) {
+		response.Header().Set("Access-Control-Allow-Origin", "*")
+		response.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		response.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if request.Method == http.MethodOptions {
+			response.WriteHeader(http.StatusOK)
+			return
+		}
+
 		if request.Method != http.MethodGet {
 			writeAccountError(response, http.StatusMethodNotAllowed, "method not allowed")
 			return
@@ -219,47 +215,47 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 		var history AccountHistory
 		err := db.QueryRowContext(request.Context(), `
 			SELECT account_no, balance
-			FROM SAVINGS_ACCOUNT
+			FROM savings_account
 			WHERE account_no = ?`, accountNo).Scan(&history.AccountNo, &history.Balance)
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows){
 			writeAccountError(response, http.StatusNotFound, "account not found")
 			return
 		}
 		if err != nil {
+			log.Println("Error fetching account:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch account")
 			return
 		}
 
-		importStrconv := true
-		_ = importStrconv // Handled by goimports later if needed.
+		importStrconv :=true
+		_ = importStrconv 
 
-		// Parse offset from URL query
 		offsetStr := request.URL.Query().Get("offset")
 		var offset int
-		fmt.Sscanf(offsetStr, "%d", &offset) // simple parse without extra imports
-		if offset < 0 {
+		fmt.Sscanf(offsetStr, "%d", &offset) 
+		if offset < 0{
 			offset = 0
 		}
 
 		limit := 50
-		// Fetch limit + 1 to detect if there are more rows
 		rows, err := db.QueryContext(request.Context(), `
-			SELECT txn_id, txn_type, amount, balance_after, timestamp, reference_no
-			FROM TRANSACTION
+			SELECT txn_id, txn_type, amount, balance_after, timestamp, '' AS reference_no
+			FROM transaction
 			WHERE account_no = ?
 			ORDER BY timestamp DESC, txn_id DESC
 			LIMIT ? OFFSET ?`, accountNo, limit+1, offset)
-		if err != nil {
+		if err !=nil{
+			log.Println("Error fetching transactions:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch transactions")
 			return
 		}
 		defer rows.Close()
 
-		history.Transactions = make([]Transaction, 0)
-		for rows.Next() {
+		history.Transactions=make([]Transaction, 0)
+		for rows.Next(){
 			var transaction Transaction
 			var nullRef sql.NullString
-			if err := rows.Scan(
+			if err :=rows.Scan(
 				&transaction.TransactionID,
 				&transaction.TransactionType,
 				&transaction.Amount,
@@ -267,18 +263,21 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 				&transaction.Timestamp,
 				&nullRef,
 			); err != nil {
+				log.Println("Error scanning transaction row:", err)
 				writeAccountError(response, http.StatusInternalServerError, "could not read transaction")
 				return
 			}
 			transaction.ReferenceNo = nullRef.String
 			history.Transactions = append(history.Transactions, transaction)
 		}
-		if err := rows.Err(); err != nil {
+
+		if err:=rows.Err(); err!= nil {
+			log.Println("Row iteration error:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not read transactions")
 			return
 		}
 
-		if len(history.Transactions) > limit {
+		if len(history.Transactions)> limit {
 			history.HasMore = true
 			history.Transactions = history.Transactions[:limit]
 		} else {
@@ -286,14 +285,15 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		response.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(response).Encode(history); err != nil {
+		if err :=json.NewEncoder(response).Encode(history); err != nil {
+			log.Println("JSON encoding error:", err)
 			return
 		}
 	}
 }
 
 func accountNumberFromPath(path string) string {
-	const prefix = "/api/account/"
+	const prefix="/api/account/"
 	if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, "/history") {
 		return ""
 	}

@@ -1,8 +1,4 @@
--- ==========================================
--- 1. BASE TABLES (No Foreign Keys)
--- ==========================================
-
-CREATE TABLE USER_ACCOUNT (
+CREATE TABLE USER_ACCOUNT(
     username VARCHAR(50) PRIMARY KEY,
     password_hash VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -11,7 +7,7 @@ CREATE TABLE USER_ACCOUNT (
     last_login DATETIME
 );
 
-CREATE TABLE PERSON (
+CREATE TABLE PERSON(
     person_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
@@ -22,14 +18,14 @@ CREATE TABLE PERSON (
     city VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE BRANCH (
+CREATE TABLE BRANCH(
     branch_id INT AUTO_INCREMENT PRIMARY KEY,
     branch_name VARCHAR(100) NOT NULL,
     address VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20) NOT NULL
 );
 
-CREATE TABLE ACCOUNT_PLAN (
+CREATE TABLE ACCOUNT_PLAN(
     plan_id INT AUTO_INCREMENT PRIMARY KEY,
     plan_name VARCHAR(30) NOT NULL UNIQUE,
     interest_rate DECIMAL(5,2) NOT NULL,
@@ -38,7 +34,7 @@ CREATE TABLE ACCOUNT_PLAN (
     CONSTRAINT chk_account_plan_min_balance CHECK (min_balance >= 0)
 );
 
-CREATE TABLE FD_PLAN (
+CREATE TABLE FD_PLAN(
     fd_plan_id INT AUTO_INCREMENT PRIMARY KEY,
     interest_rate DECIMAL(5,2) NOT NULL,
     term_months INT NOT NULL,
@@ -47,11 +43,7 @@ CREATE TABLE FD_PLAN (
     CONSTRAINT uq_term_months UNIQUE (term_months)
 );
 
--- ==========================================
--- 2. LEVEL 1 DEPENDENCIES (Depends on Base)
--- ==========================================
-
-CREATE TABLE STAFF (
+CREATE TABLE STAFF(
     person_id INT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     branch_id INT NOT NULL,
@@ -61,8 +53,7 @@ CREATE TABLE STAFF (
     FOREIGN KEY (branch_id) REFERENCES BRANCH(branch_id)
 );
 
-
-CREATE TABLE CUSTOMER (
+CREATE TABLE CUSTOMER(
     person_id INT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     assigned_agent_person_id INT,
@@ -75,7 +66,7 @@ CREATE TABLE CUSTOMER (
     FOREIGN KEY (registered_branch_id) REFERENCES BRANCH(branch_id)
 );
 
-CREATE TABLE SAVINGS_ACCOUNT (
+CREATE TABLE SAVINGS_ACCOUNT(
     account_no VARCHAR(12) PRIMARY KEY,
     plan_id INT NOT NULL,
     branch_id INT NOT NULL,
@@ -86,7 +77,7 @@ CREATE TABLE SAVINGS_ACCOUNT (
     FOREIGN KEY (branch_id) REFERENCES BRANCH(branch_id)
 );
 
-CREATE TABLE OTP_TOKEN (
+CREATE TABLE OTP_TOKEN(
     token_id VARCHAR(255) PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     otp_hash VARCHAR(255) NOT NULL,
@@ -95,7 +86,7 @@ CREATE TABLE OTP_TOKEN (
     FOREIGN KEY (username) REFERENCES USER_ACCOUNT(username)
 );
 
-CREATE TABLE USER_SESSION (
+CREATE TABLE USER_SESSION(
     session_id VARCHAR(255) PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     device_ip VARCHAR(50),
@@ -104,7 +95,7 @@ CREATE TABLE USER_SESSION (
     FOREIGN KEY (username) REFERENCES USER_ACCOUNT(username)
 );
 
-CREATE TABLE NOTIFICATION (
+CREATE TABLE NOTIFICATION(
     notification_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL,
     title VARCHAR(255) NOT NULL,
@@ -114,11 +105,7 @@ CREATE TABLE NOTIFICATION (
     FOREIGN KEY (username) REFERENCES USER_ACCOUNT(username)
 );
 
--- ==========================================
--- 3. LEVEL 2 DEPENDENCIES (Core Banking Logic)
--- ==========================================
-
-CREATE TABLE ACCOUNT_HOLDER (
+CREATE TABLE ACCOUNT_HOLDER(
     person_id INT NOT NULL,
     account_no VARCHAR(12) NOT NULL,
     PRIMARY KEY (person_id, account_no),
@@ -126,7 +113,7 @@ CREATE TABLE ACCOUNT_HOLDER (
     FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no)
 );
 
-CREATE TABLE FIXED_DEPOSIT (
+CREATE TABLE FIXED_DEPOSIT(
     fd_acc_no VARCHAR(12) PRIMARY KEY,
     account_no VARCHAR(12) NOT NULL,
     fd_plan_id INT NOT NULL,
@@ -138,7 +125,7 @@ CREATE TABLE FIXED_DEPOSIT (
     FOREIGN KEY (fd_plan_id) REFERENCES FD_PLAN(fd_plan_id)
 );
 
-CREATE TABLE TRANSACTION (
+CREATE TABLE TRANSACTION(
     txn_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     account_no VARCHAR(12) NOT NULL,
     staff_person_id INT,
@@ -146,24 +133,20 @@ CREATE TABLE TRANSACTION (
     amount DECIMAL(15,2) NOT NULL,
     balance_after DECIMAL(15,2) NOT NULL,
     timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reference_no VARCHAR(50),
+    reference_no VARCHAR(100),
     remarks VARCHAR(255),
     FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no),
     FOREIGN KEY (staff_person_id) REFERENCES STAFF(person_id)
 );
 
--- ==========================================
--- 4. BASE DATA INITIALIZATION
--- ==========================================
-
-INSERT INTO ACCOUNT_PLAN (plan_name, interest_rate, min_balance) VALUES
+INSERT INTO ACCOUNT_PLAN(plan_name, interest_rate, min_balance) VALUES
     ('Children', 12.00, 0.00),
     ('Teen', 11.00, 500.00),
     ('Adult', 10.00, 1000.00),
     ('Senior', 13.00, 1000.00),
     ('Joint', 7.00, 5000.00);
 
-INSERT INTO FD_PLAN (interest_rate, term_months) VALUES
+INSERT INTO FD_PLAN(interest_rate, term_months) VALUES
     (13.00, 6),
     (14.00, 12),
     (15.00, 36);
