@@ -12,11 +12,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func homePage(w http.ResponseWriter, r *http.Request){
+func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "B-Trust Backend is running!")
 }
 
-func enableCORS(next http.HandlerFunc) http.HandlerFunc{
+func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
@@ -30,7 +30,7 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc{
 	}
 }
 
-func main(){
+func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file: ", err)
@@ -41,16 +41,16 @@ func main(){
 	dbPort := os.Getenv("DB_PORT")
 	dbName := os.Getenv("DB_NAME")
 
-	if dbUser=="" {
-		dbUser="root"
+	if dbUser == "" {
+		dbUser = "root"
 	}
-	if dbHost==""{
-		dbHost="127.0.0.1"
+	if dbHost == "" {
+		dbHost = "127.0.0.1"
 	}
-	if dbPort==""{
-		dbPort="3306"
+	if dbPort == "" {
+		dbPort = "3306"
 	}
-	if dbName == ""{
+	if dbName == "" {
 		dbName = "btrust"
 	}
 
@@ -61,11 +61,11 @@ func main(){
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err!= nil{
+	if err := db.Ping(); err != nil {
 		log.Fatal("Error pinging database: ", err)
 	}
 
-	hashedPwd, _ :=bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 	_, err = db.Exec(`
         INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
 		VALUES (?, ?, ?, ?, ?)

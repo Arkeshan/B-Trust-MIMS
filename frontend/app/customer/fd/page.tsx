@@ -376,11 +376,10 @@ export default function CustomerFDPage() {
                           key={plan.id}
                           type="button"
                           onClick={() => setPlanId(plan.id)}
-                          className={`rounded-lg border p-2 text-center transition cursor-pointer ${
-                            planId === plan.id
+                          className={`rounded-lg border p-2 text-center transition cursor-pointer ${planId === plan.id
                               ? "border-[#06B6D4] bg-white text-[#001F3F] shadow-xs"
                               : "border-gray-200 bg-transparent text-[#6B7280] hover:bg-white/50"
-                          }`}
+                            }`}
                         >
                           <p className="text-xs font-bold">{plan.label}</p>
                           <p className="text-[10px] text-[#06B6D4] font-semibold">
@@ -415,11 +414,10 @@ export default function CustomerFDPage() {
                   {/* Form Message */}
                   {formResult && (
                     <div
-                      className={`flex items-start gap-2 rounded-lg p-3 text-xs border ${
-                        formResult.ok
+                      className={`flex items-start gap-2 rounded-lg p-3 text-xs border ${formResult.ok
                           ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                           : "border-rose-200 bg-rose-50 text-rose-800"
-                      }`}
+                        }`}
                     >
                       {formResult.ok ? (
                         <CheckCircle2 size={16} />
