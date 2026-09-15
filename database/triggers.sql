@@ -30,7 +30,7 @@ BEGIN
         WHERE account_no = NEW.account_no;
     END IF;
 
-END;
+END //
 
 DELIMITER  ;
 
