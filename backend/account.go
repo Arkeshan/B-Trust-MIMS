@@ -4,29 +4,203 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
+	"github.com/shopspring/decimal"
 )
 
-type AccountHistory struct {
-	AccountNo    string        `json:"account_no"`
-	Balance      float64       `json:"balance"`
-	Transactions []Transaction `json:"transactions"`
+type CustomerAccount struct{
+	AccountNo string          `json:"account_no"`
+	Balance   decimal.Decimal `json:"balance"`
 }
 
-type Transaction struct {
-	TransactionID   int64     `json:"transaction_id"`
-	TransactionType string    `json:"transaction_type"`
-	Amount          float64   `json:"amount"`
-	BalanceAfter    float64   `json:"balance_after"`
-	Timestamp       time.Time `json:"timestamp"`
-	ReferenceNo     string    `json:"reference_no"`
+type RecipientLookup struct{
+	AccountNo  string `json:"account_no"`
+	MaskedName string `json:"masked_name"`
+	Status     string `json:"status"`
 }
 
-// AccountHistoryHandler returns a handler with its database dependency supplied by the caller.
-func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
+type AccountHistory struct{
+	AccountNo    string          `json:"account_no"`
+	Balance      decimal.Decimal `json:"balance"`
+	HasMore      bool            `json:"has_more"`
+	Transactions []Transaction   `json:"transactions"`
+}
+
+type Transaction struct{
+	TransactionID   int64           `json:"transaction_id"`
+	TransactionType string          `json:"transaction_type"`
+	Amount          decimal.Decimal `json:"amount"`
+	BalanceAfter    decimal.Decimal `json:"balance_after"`
+	Timestamp       time.Time       `json:"timestamp"`
+	ReferenceNo     string          `json:"reference_no"`
+}
+
+func maskName(first, last string) string{
+	first = strings.TrimSpace(first)
+	last = strings.TrimSpace(last)
+	maskedFirst := ""
+	if len(first) > 0 {
+		maskedFirst = string([]rune(first)[0])+ "***"
+	}
+	maskedLast := ""
+	if len(last) > 0 {
+		maskedLast = string([]rune(last)[0]) + "***"
+	}
+	if maskedFirst != "" && maskedLast != ""{
+		return maskedFirst + " " + maskedLast
+	}
+	if maskedFirst != "" {
+		return maskedFirst
+	}
+	return maskedLast
+}
+
+func CustomerAccountsHandler(db *sql.DB) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		username, err := getAuthenticatedUser(r, db)
+		if err != nil || username == ""{
+			http.Error(w, "Unauthorized access", http.StatusUnauthorized)
+			return
+		}
+
+		query := `
+			SELECT sa.account_no, sa.balance
+			FROM CUSTOMER c
+			JOIN ACCOUNT_HOLDER ah ON c.person_id = ah.person_id
+			JOIN SAVINGS_ACCOUNT sa ON ah.account_no = sa.account_no
+			WHERE c.username = ? AND sa.status = 'active'
+			ORDER BY sa.account_no ASC`
+
+		rows, err := db.QueryContext(r.Context(), query, username)
+		if err != nil {
+			http.Error(w, "Database error querying accounts", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		accounts := make([]CustomerAccount, 0)
+		for rows.Next(){
+			var acc CustomerAccount
+			if err := rows.Scan(&acc.AccountNo, &acc.Balance); err != nil{
+				http.Error(w, "Error reading account row", http.StatusInternalServerError)
+				return
+			}
+			accounts=append(accounts, acc)
+		}
+		if err := rows.Err(); err!=nil{
+			http.Error(w, "Error iterating account rows", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(accounts)
+	}
+}
+
+func AccountHolderLookupHandler(db *sql.DB) http.HandlerFunc{
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		accountNo :=strings.TrimSpace(r.URL.Query().Get("account_no"))
+		if accountNo == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "account_no parameter is required"})
+			return
+		}
+
+		query := `
+			SELECT 
+				sa.account_no,
+				sa.status,
+				COALESCE(p.first_name, ''),
+				COALESCE(p.last_name, '')
+			FROM SAVINGS_ACCOUNT sa
+			LEFT JOIN ACCOUNT_HOLDER ah ON sa.account_no = ah.account_no
+			LEFT JOIN PERSON p ON ah.person_id = p.person_id
+			WHERE sa.account_no = ?`
+
+		rows, err := db.QueryContext(r.Context(), query, accountNo)
+		if err != nil{
+			http.Error(w, "Database lookup error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		var resp RecipientLookup
+		var maskedHolders []string
+		found := false
+
+		for rows.Next(){
+			found = true
+			var accNo, status, firstName, lastName string
+			if err := rows.Scan(&accNo, &status, &firstName, &lastName); err != nil {
+				http.Error(w, "Error reading lookup row", http.StatusInternalServerError)
+				return
+			}
+			resp.AccountNo = accNo
+			resp.Status = status
+			if firstName != "" || lastName != "" {
+				maskedHolders = append(maskedHolders, maskName(firstName, lastName))
+			}
+		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, "Error iterating lookup rows", http.StatusInternalServerError)
+			return
+		}
+
+		if !found {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Account not found",
+			})
+			return
+		}
+
+		if resp.Status != "active"{
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": "Account is " + resp.Status + " and cannot receive transfers",
+			})
+			return
+		}
+
+		if len(maskedHolders) > 0 {
+			resp.MaskedName = strings.Join(maskedHolders, " / ")
+		} else {
+			resp.MaskedName = "B-Trust Customer"
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(resp)
+	}
+}
+
+func AccountHistoryHandler(db *sql.DB) http.HandlerFunc{
 	return func(response http.ResponseWriter, request *http.Request) {
+		response.Header().Set("Access-Control-Allow-Origin", "*")
+		response.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+		response.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if request.Method == http.MethodOptions {
+			response.WriteHeader(http.StatusOK)
+			return
+		}
+
 		if request.Method != http.MethodGet {
 			writeAccountError(response, http.StatusMethodNotAllowed, "method not allowed")
 			return
@@ -41,58 +215,85 @@ func AccountHistoryHandler(db *sql.DB) http.HandlerFunc {
 		var history AccountHistory
 		err := db.QueryRowContext(request.Context(), `
 			SELECT account_no, balance
-			FROM SAVINGS_ACCOUNT
+			FROM savings_account
 			WHERE account_no = ?`, accountNo).Scan(&history.AccountNo, &history.Balance)
-		if errors.Is(err, sql.ErrNoRows) {
+		if errors.Is(err, sql.ErrNoRows){
 			writeAccountError(response, http.StatusNotFound, "account not found")
 			return
 		}
 		if err != nil {
+			log.Println("Error fetching account:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch account")
 			return
 		}
 
+		importStrconv :=true
+		_ = importStrconv 
+
+		offsetStr := request.URL.Query().Get("offset")
+		var offset int
+		fmt.Sscanf(offsetStr, "%d", &offset) 
+		if offset < 0{
+			offset = 0
+		}
+
+		limit := 50
 		rows, err := db.QueryContext(request.Context(), `
-			SELECT txn_id, txn_type, amount, balance_after, timestamp, reference_no
-			FROM TRANSACTION
+			SELECT txn_id, txn_type, amount, balance_after, timestamp, '' AS reference_no
+			FROM transaction
 			WHERE account_no = ?
-			ORDER BY timestamp DESC, txn_id DESC`, accountNo)
-		if err != nil {
+			ORDER BY timestamp DESC, txn_id DESC
+			LIMIT ? OFFSET ?`, accountNo, limit+1, offset)
+		if err !=nil{
+			log.Println("Error fetching transactions:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not fetch transactions")
 			return
 		}
 		defer rows.Close()
 
-		history.Transactions = make([]Transaction, 0)
-		for rows.Next() {
+		history.Transactions=make([]Transaction, 0)
+		for rows.Next(){
 			var transaction Transaction
-			if err := rows.Scan(
+			var nullRef sql.NullString
+			if err :=rows.Scan(
 				&transaction.TransactionID,
 				&transaction.TransactionType,
 				&transaction.Amount,
 				&transaction.BalanceAfter,
 				&transaction.Timestamp,
-				&transaction.ReferenceNo,
+				&nullRef,
 			); err != nil {
+				log.Println("Error scanning transaction row:", err)
 				writeAccountError(response, http.StatusInternalServerError, "could not read transaction")
 				return
 			}
+			transaction.ReferenceNo = nullRef.String
 			history.Transactions = append(history.Transactions, transaction)
 		}
-		if err := rows.Err(); err != nil {
+
+		if err:=rows.Err(); err!= nil {
+			log.Println("Row iteration error:", err)
 			writeAccountError(response, http.StatusInternalServerError, "could not read transactions")
 			return
 		}
 
+		if len(history.Transactions)> limit {
+			history.HasMore = true
+			history.Transactions = history.Transactions[:limit]
+		} else {
+			history.HasMore = false
+		}
+
 		response.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(response).Encode(history); err != nil {
+		if err :=json.NewEncoder(response).Encode(history); err != nil {
+			log.Println("JSON encoding error:", err)
 			return
 		}
 	}
 }
 
 func accountNumberFromPath(path string) string {
-	const prefix = "/api/account/"
+	const prefix="/api/account/"
 	if !strings.HasPrefix(path, prefix) || !strings.HasSuffix(path, "/history") {
 		return ""
 	}
