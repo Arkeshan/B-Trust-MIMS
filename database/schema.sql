@@ -1,7 +1,3 @@
--- ==========================================
--- 1. BASE TABLES (No Foreign Keys)
--- ==========================================
-
 CREATE TABLE USER_ACCOUNT (
     username VARCHAR(50) PRIMARY KEY,
     password_hash VARCHAR(255) NOT NULL,
@@ -46,10 +42,6 @@ CREATE TABLE FD_PLAN (
     CONSTRAINT chk_interest_rate CHECK (interest_rate > 0 AND interest_rate < 100),
     CONSTRAINT uq_term_months UNIQUE (term_months)
 );
-
--- ==========================================
--- 2. LEVEL 1 DEPENDENCIES (Depends on Base)
--- ==========================================
 
 CREATE TABLE STAFF (
     person_id INT PRIMARY KEY,
@@ -114,10 +106,6 @@ CREATE TABLE NOTIFICATION (
     FOREIGN KEY (username) REFERENCES USER_ACCOUNT(username)
 );
 
--- ==========================================
--- 3. LEVEL 2 DEPENDENCIES (Core Banking Logic)
--- ==========================================
-
 CREATE TABLE ACCOUNT_HOLDER (
     person_id INT NOT NULL,
     account_no VARCHAR(12) NOT NULL,
@@ -150,10 +138,6 @@ CREATE TABLE TRANSACTION (
     FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no),
     FOREIGN KEY (staff_person_id) REFERENCES STAFF(person_id)
 );
-
--- ==========================================
--- 4. BASE DATA INITIALIZATION
--- ==========================================
 
 INSERT INTO ACCOUNT_PLAN (plan_name, interest_rate, min_balance) VALUES
     ('Children', 12.00, 0.00),
