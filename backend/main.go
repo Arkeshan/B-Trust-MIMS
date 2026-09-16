@@ -54,7 +54,7 @@ func main() {
 		dbName = "btrust"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error connecting to database: ", err)
