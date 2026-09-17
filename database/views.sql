@@ -10,6 +10,7 @@ FROM STAFF s
 JOIN PERSON p ON p.person_id = s.person_id
 LEFT JOIN TRANSACTION t ON t.staff_person_id = s.person_id
 WHERE s.role = 'agent'
+
 GROUP BY s.person_id, p.first_name, p.last_name, s.branch_id;
 
 CREATE OR REPLACE VIEW vw_account_transaction_summary AS
@@ -69,3 +70,9 @@ JOIN ACCOUNT_HOLDER ah ON ah.person_id = c.person_id
 JOIN SAVINGS_ACCOUNT sa ON sa.account_no = ah.account_no
 LEFT JOIN TRANSACTION t ON t.account_no = sa.account_no
 GROUP BY c.person_id, p.first_name, p.last_name;
+
+
+CREATE OR REPLACE VIEW vw_recent_txn AS
+SELECT * 
+FROM TRANSACTION 
+WHERE timestamp >= NOW() - INTERVAL 7 DAY;

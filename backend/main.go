@@ -81,7 +81,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", homePage)
-	http.Handle("/api/account/", AccountHistoryHandler(db))
+	//http.Handle("/api/account/", AccountHistoryHandler(db))
 	http.Handle("/api/reports/", ReportsHandler(db))
 
 	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
@@ -97,6 +97,10 @@ func main() {
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
 
+	// Customer Portal Routes
+	http.HandleFunc("/api/account/", enableCORS(RecentHistoryHandler(db)))
+
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
+	
 }
