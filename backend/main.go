@@ -71,17 +71,13 @@ func main() {
 		log.Fatal("Error pinging database: ", err)
 	}
 
-	// Cleanly delete any old rows first, then insert a fresh valid test user
-	_, _ = db.Exec("DELETE FROM USER_ACCOUNT WHERE username = ?", "agent_achira")
-
+	// Automatically generate a valid bcrypt hash for "password123" and update all accounts
 	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	_, err = db.Exec(`
-        INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
-        VALUES (?, ?, ?, ?, ?)`,
-		"agent_achira", string(hashedPwd), "achira@btrust.com", "staff", "active",
-	)
+	_, err = db.Exec("UPDATE USER_ACCOUNT SET password_hash = ?", string(hashedPwd))
 	if err != nil {
-		log.Println("Warning: Could not seed test user:", err)
+		log.Println("Warning: Could not update passwords:", err)
+	} else {
+		log.Println(">>> Successfully updated all accounts with password: password123")
 	}
 
 	// 3. Register your routes + their incoming routes
