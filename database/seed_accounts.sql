@@ -67,11 +67,13 @@ INSERT INTO SAVINGS_ACCOUNT (account_no, plan_id, branch_id, balance, opened_dat
     ('ACC000000006', 5, 1, 50000.00, '2026-08-03', 'active'), -- Joint Account 1
     ('ACC000000007', 5, 2, 75000.00, '2026-08-04', 'active'), -- Joint Account 2
     ('ACC000000008', 1, 1, 2000.00, '2026-08-04', 'active'),  -- Child Account
-    ('ACC000000009', 1, 2, 3000.00, '2026-08-05', 'active');  -- Child Account
+    ('ACC000000009', 1, 2, 3000.00, '2026-08-05', 'active'),  -- Child Account
+    ('ACC000000010', 3, 1, 5500.00, '2026-08-05', 'active');  -- Second Account for cust_1
 
--- 5. Map People to Accounts (Establishing the 2 Joint Accounts)
+-- 5. Map People to Accounts (Establishing the 2 Joint Accounts + Multiple Accounts)
 INSERT INTO ACCOUNT_HOLDER (person_id, account_no) VALUES
     (6, 'ACC000000001'),
+    (6, 'ACC000000010'), -- Person 6 (cust_1) has 2 accounts
     (7, 'ACC000000002'),
     (8, 'ACC000000003'),
     (9, 'ACC000000004'),

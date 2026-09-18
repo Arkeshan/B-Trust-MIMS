@@ -16,7 +16,6 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "B-Trust Backend is running!")
 }
 
-// enableCORS allows frontend requests from Next.js on localhost:3000
 func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -27,25 +26,21 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-
 		next(w, r)
 	}
 }
 
 func main() {
-	// 1. Load the hidden variables from the .env file
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file: ", err)
 	}
-
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 	dbName := os.Getenv("DB_NAME")
 
-	// Fallbacks just in case your .env is missing the new fields
 	if dbUser == "" {
 		dbUser = "root"
 	}
@@ -59,8 +54,7 @@ func main() {
 		dbName = "btrust"
 	}
 
-	// 2. Construct the connection string securely
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error connecting to database: ", err)
@@ -71,23 +65,40 @@ func main() {
 		log.Fatal("Error pinging database: ", err)
 	}
 
-	// Automatically generate a valid bcrypt hash for "password123" and update all accounts
 	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	_, err = db.Exec("UPDATE USER_ACCOUNT SET password_hash = ?", string(hashedPwd))
+	_, err = db.Exec(`
+        INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
+		VALUES (?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			password_hash = VALUES(password_hash),
+			email = VALUES(email),
+			type = VALUES(type),
+			status = VALUES(status)`,
+		"agent_achira", string(hashedPwd), "achira@btrust.com", "staff", "active",
+	)
 	if err != nil {
-		log.Println("Warning: Could not update passwords:", err)
-	} else {
-		log.Println(">>> Successfully updated all accounts with password: password123")
+		log.Println("Warning: Could not seed test user:", err)
 	}
 
-	// 3. Register your routes + their incoming routes
 	http.HandleFunc("/", homePage)
-	http.Handle("/api/reports/", ReportsHandler(db)) // Your new dashboard route
+	//http.Handle("/api/account/", AccountHistoryHandler(db))
+	http.Handle("/api/reports/", ReportsHandler(db))
 
-	// Incoming transaction and auth routes
+	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
+	http.HandleFunc("/api/fd/new", enableCORS(OpenFDHandler(db)))
+	http.HandleFunc("/api/fd/list", enableCORS(ListFDHandler(db)))
+	http.HandleFunc("/api/cron/interest", enableCORS(CronInterestHandler(db)))
+
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
+
+	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
+	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
+	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
+
+	// Customer Portal Routes
+	http.HandleFunc("/api/account/", enableCORS(RecentHistoryHandler(db)))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
