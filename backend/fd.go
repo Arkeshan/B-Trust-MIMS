@@ -6,7 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // ─────────────────────────────────────────────
@@ -15,21 +18,21 @@ import (
 
 // FDPlan holds the plan details returned alongside an FD.
 type FDPlan struct {
-	FDPlanID     int     `json:"fd_plan_id"`
-	InterestRate float64 `json:"interest_rate"`
-	TermMonths   int     `json:"term_months"`
+	FDPlanID     int             `json:"fd_plan_id"`
+	InterestRate decimal.Decimal `json:"interest_rate"`
+	TermMonths   int             `json:"term_months"`
 }
 
 // FixedDeposit is the full FD record returned to the client.
 type FixedDeposit struct {
-	FDAccNo           string    `json:"fd_acc_no"`
-	AccountNo         string    `json:"account_no"`
-	Plan              FDPlan    `json:"plan"`
-	Investment        float64   `json:"investment"`
-	StartDate         time.Time `json:"start_date"`
-	MaturityDate      time.Time `json:"maturity_date"`
-	NextPayoutDate    time.Time `json:"next_payout_date"`
-	InterestPaidSoFar float64   `json:"interest_paid_so_far"`
+	FDAccNo           string          `json:"fd_acc_no"`
+	AccountNo         string          `json:"account_no"`
+	Plan              FDPlan          `json:"plan"`
+	Investment        decimal.Decimal `json:"investment"`
+	StartDate         time.Time       `json:"start_date"`
+	MaturityDate      time.Time       `json:"maturity_date"`
+	NextPayoutDate    time.Time       `json:"next_payout_date"`
+	InterestPaidSoFar decimal.Decimal `json:"interest_paid_so_far"`
 }
 
 // ─────────────────────────────────────────────
@@ -38,20 +41,20 @@ type FixedDeposit struct {
 
 // OpenFDRequest is the JSON body expected by the open-FD endpoint.
 type OpenFDRequest struct {
-	AccountNo  string  `json:"account_no"` // linked savings account
-	FDPlanID   int     `json:"fd_plan_id"` // 1=6mo, 2=12mo, 3=36mo
-	Investment float64 `json:"investment"` // principal amount in LKR
+	AccountNo  string          `json:"account_no"` // linked savings account
+	FDPlanID   int             `json:"fd_plan_id"` // 1=6mo, 2=12mo, 3=36mo
+	Investment decimal.Decimal `json:"investment"` // principal amount in LKR
 }
 
 // OpenFDResponse is returned on success.
 type OpenFDResponse struct {
-	FDAccNo        string    `json:"fd_acc_no"`
-	AccountNo      string    `json:"account_no"`
-	FDPlanID       int       `json:"fd_plan_id"`
-	Investment     float64   `json:"investment"`
-	StartDate      time.Time `json:"start_date"`
-	NextPayoutDate time.Time `json:"next_payout_date"`
-	Message        string    `json:"message"`
+	FDAccNo        string          `json:"fd_acc_no"`
+	AccountNo      string          `json:"account_no"`
+	FDPlanID       int             `json:"fd_plan_id"`
+	Investment     decimal.Decimal `json:"investment"`
+	StartDate      time.Time       `json:"start_date"`
+	NextPayoutDate time.Time       `json:"next_payout_date"`
+	Message        string          `json:"message"`
 }
 
 // OpenFDHandler handles POST /api/fd/open.
@@ -77,7 +80,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			writeFDError(w, http.StatusBadRequest, "fd_plan_id is required")
 			return
 		}
-		if req.Investment <= 0 {
+		if req.Investment.LessThanOrEqual(decimal.Zero) {
 			writeFDError(w, http.StatusBadRequest, "investment must be greater than zero")
 			return
 		}
@@ -102,8 +105,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// ── 3. Enforce one-FD-per-account rule ──────────────────────────
-		// (Also enforced by the trg_one_fd_per_account trigger in MySQL,
-		//  but we check here to return a friendly message.)
+
 		var existingFDCount int
 		if err := db.QueryRowContext(r.Context(),
 			`SELECT COUNT(*) FROM FIXED_DEPOSIT WHERE account_no = ?`,
@@ -141,7 +143,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			_ = tx.Rollback()
 		}
 
-		var balance, minimumBalance float64
+		var balance, minimumBalance decimal.Decimal
 		err = tx.QueryRowContext(r.Context(), `
 			SELECT sa.balance, ap.min_balance
 			FROM SAVINGS_ACCOUNT AS sa
@@ -153,7 +155,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			writeFDError(w, http.StatusInternalServerError, "could not lock savings account")
 			return
 		}
-		if balance-req.Investment < minimumBalance {
+		if balance.Sub(req.Investment).LessThan(minimumBalance) {
 			rollback()
 			writeFDError(w, http.StatusUnprocessableEntity,
 				"insufficient funds or savings account minimum balance would be breached")
@@ -360,4 +362,76 @@ func writeFDError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+type FDStatus struct {
+	FDAccNo               string          `json:"fd_acc_no"`
+	AccountNo             string          `json:"account_no"`
+	Investment            decimal.Decimal `json:"investment"`
+	StartDate             time.Time       `json:"start_date"`
+	MaturityDate          time.Time       `json:"due_date"`
+	ElapsedMonths         int             `json:"elapsed_months"`
+	InterestRate          decimal.Decimal `json:"interest_rate"`
+	TermMonths            int             `json:"term_months"`
+	InterestPaidToDate    decimal.Decimal `json:"interest_paid_to_date"`
+	CurrentEarnedInterest decimal.Decimal `json:"current_interest"`
+	NextPayoutDate        time.Time       `json:"next_payout_date"`
+}
+
+// FDStatusHandler handles GET /api/fd/status/{id}
+func FDStatusHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeFDError(w, http.StatusMethodNotAllowed, "Method Not Allowed")
+			return
+		}
+
+		fdAccNo := strings.TrimPrefix(r.URL.Path, "/api/fd/status/")
+		fdAccNo = strings.TrimSuffix(fdAccNo, "/")
+		if fdAccNo == "" {
+			writeFDError(w, http.StatusBadRequest, "Missing FD Account Number")
+			return
+		}
+
+		var s FDStatus
+		err := db.QueryRowContext(r.Context(), `
+		SELECT
+		fd_acc_no,
+		account_no,
+		investment,
+		start_date,
+		due_date,
+		elapsed_months,
+		interest_rate,
+		term_months,
+		interest_paid_to_date,
+		current_interest,
+		next_payout_date
+		FROM vw_fd_status WHERE fd_acc_no = ?`, fdAccNo,
+		).Scan(
+			&s.FDAccNo,
+			&s.AccountNo,
+			&s.Investment,
+			&s.StartDate,
+			&s.MaturityDate,
+			&s.ElapsedMonths,
+			&s.InterestRate,
+			&s.TermMonths,
+			&s.InterestPaidToDate,
+			&s.CurrentEarnedInterest,
+			&s.NextPayoutDate,
+		)
+		if errors.Is(err, sql.ErrNoRows) {
+			writeFDError(w, http.StatusNotFound, "fixed deposit not found")
+			return
+		}
+		if err != nil {
+			writeFDError(w, http.StatusInternalServerError, "could not fetch FD status: "+err.Error())
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(s)
+	}
 }
