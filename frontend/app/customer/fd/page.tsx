@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -152,9 +152,9 @@ function FDCard({ fd }: { fd: FixedDeposit }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page Content ────────────────────────────────────────────────────────
 
-export default function CustomerFDPage() {
+function CustomerFDContent() {
   const searchParams = useSearchParams();
   const linkedParam = searchParams.get("account") ?? "";
 
@@ -444,5 +444,19 @@ export default function CustomerFDPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function CustomerFDPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center text-sm text-gray-500">
+          Loading Fixed Deposits...
+        </div>
+      }
+    >
+      <CustomerFDContent />
+    </Suspense>
   );
 }

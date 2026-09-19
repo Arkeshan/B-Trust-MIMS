@@ -54,7 +54,7 @@ func main() {
 		dbName = "btrust"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error connecting to database: ", err)
@@ -81,7 +81,7 @@ func main() {
 	}
 
 	http.HandleFunc("/", homePage)
-	http.Handle("/api/account/", AccountHistoryHandler(db))
+	//http.Handle("/api/account/", AccountHistoryHandler(db))
 	http.Handle("/api/reports/", ReportsHandler(db))
 
 	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
@@ -97,6 +97,9 @@ func main() {
 	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
+
+	// Customer Portal Routes
+	http.HandleFunc("/api/account/", enableCORS(RecentHistoryHandler(db)))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))

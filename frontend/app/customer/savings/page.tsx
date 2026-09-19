@@ -314,20 +314,26 @@ export default function SavingsAccountPage() {
                   {activeAccount.transactions &&
                   activeAccount.transactions.length > 0 ? (
                     activeAccount.transactions.map((t) => {
-                      const isDeposit =
-                        t.transaction_type.toLowerCase() === "deposit";
+                      const isCredit =
+                        t.transaction_type.toLowerCase() === "deposit" ||
+                        t.transaction_type.toLowerCase() === "interest";
                       return (
                         <tr
                           key={t.transaction_id}
                           className="hover:bg-gray-50 transition"
                         >
                           <td className="px-6 py-3.5 font-mono text-xs text-[#6B7280]">
-                            #{t.transaction_id}
+                            <span>#{t.transaction_id}</span>
+                            {t.reference_no && (
+                              <span className="block text-[10px] text-gray-400 font-mono">
+                                {t.reference_no}
+                              </span>
+                            )}
                           </td>
                           <td className="px-6 py-3.5">
                             <span
                               className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
-                                isDeposit
+                                isCredit
                                   ? "bg-emerald-100 text-emerald-800"
                                   : "bg-rose-100 text-rose-800"
                               }`}
@@ -340,10 +346,10 @@ export default function SavingsAccountPage() {
                           </td>
                           <td
                             className={`px-6 py-3.5 text-right font-medium ${
-                              isDeposit ? "text-emerald-600" : "text-rose-600"
+                              isCredit ? "text-emerald-600" : "text-rose-600"
                             }`}
                           >
-                            {isDeposit ? "+" : "-"}
+                            {isCredit ? "+" : "-"}
                             {currency.format(t.amount)}
                           </td>
                           <td className="px-6 py-3.5 text-right font-mono text-xs text-[#000000]">
