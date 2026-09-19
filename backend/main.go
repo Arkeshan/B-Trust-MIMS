@@ -87,6 +87,7 @@ func main() {
 	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
 	http.HandleFunc("/api/fd/new", enableCORS(OpenFDHandler(db)))
 	http.HandleFunc("/api/fd/list", enableCORS(ListFDHandler(db)))
+	http.HandleFunc("/api/fd/status/", enableCORS(FDStatusHandler(db)))
 	http.HandleFunc("/api/cron/interest", enableCORS(CronInterestHandler(db)))
 
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
