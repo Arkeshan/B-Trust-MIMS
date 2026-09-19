@@ -1,4 +1,4 @@
---for users to authentication
+-- for users to authentication
 CREATE OR REPLACE VIEW vw_login_auth AS
 SELECT 
     username,
@@ -7,7 +7,7 @@ SELECT
     status
 FROM USER_ACCOUNT;
 
---number of taransactions
+-- number of transactions
 CREATE OR REPLACE VIEW vw_agent_transaction_summary AS
 SELECT
     s.person_id            AS agent_person_id,
@@ -22,7 +22,7 @@ LEFT JOIN TRANSACTION t ON t.staff_person_id = s.person_id
 WHERE s.role = 'agent'
 GROUP BY s.person_id, p.first_name, p.last_name, s.branch_id;
 
---total deposits and withdrawals.
+-- total deposits and withdrawals.
 CREATE OR REPLACE VIEW vw_account_transaction_summary AS
 SELECT
     sa.account_no,
@@ -36,7 +36,7 @@ FROM SAVINGS_ACCOUNT sa
 LEFT JOIN TRANSACTION t ON t.account_no = sa.account_no
 GROUP BY sa.account_no, sa.balance, sa.status;
 
---calculate dates
+-- calculate dates
 CREATE OR REPLACE VIEW vw_active_fd_payouts AS
 SELECT
     fd.fd_acc_no,
@@ -52,7 +52,7 @@ JOIN FD_PLAN fp        ON fp.fd_plan_id = fd.fd_plan_id
 JOIN SAVINGS_ACCOUNT sa ON sa.account_no = fd.account_no
 WHERE sa.status = 'active';
 
---choosing accounts
+-- choosing accounts
 CREATE OR REPLACE VIEW vw_monthly_interest_by_account_type AS
 SELECT
     ap.plan_name,
@@ -65,7 +65,7 @@ JOIN ACCOUNT_PLAN ap    ON ap.plan_id = sa.plan_id
 WHERE t.txn_type = 'interest'
 GROUP BY ap.plan_name, DATE_FORMAT(t.timestamp, '%Y-%m');
 
---for create summory
+-- for create summary
 CREATE OR REPLACE VIEW vw_customer_activity AS
 SELECT
     c.person_id AS customer_person_id,
@@ -94,7 +94,7 @@ FIXED_DEPOSIT.start_date,
 FD_PLAN.term_months,
 FD_PLAN.interest_rate,
 TIMESTAMPDIFF(MONTH, FIXED_DEPOSIT.start_date, CURDATE()) AS elapsed_months,
-round(FIXED_DEPOSIT.investment*(FD_PLAN.interest_rate/100*12)*(TIMESTAMPDIFF(MONTH,FIXED_DEPOSIT.start_date,CURDATE())),2) AS current_interest,
+round(FIXED_DEPOSIT.investment*(FD_PLAN.interest_rate/100/12)*(TIMESTAMPDIFF(MONTH,FIXED_DEPOSIT.start_date,CURDATE())),2) AS current_interest,
 FIXED_DEPOSIT.start_date + INTERVAL FD_PLAN.term_months MONTH as due_date,
 FIXED_DEPOSIT.next_payout_date,
 FIXED_DEPOSIT.interest_paid_to_date

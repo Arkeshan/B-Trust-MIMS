@@ -13,8 +13,10 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import ActiveFD from "./components/ActiveFD";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+
+// Type
 
 interface FDPlan {
   fd_plan_id: number;
@@ -33,7 +35,7 @@ interface FixedDeposit {
   interest_paid_so_far: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -66,7 +68,7 @@ function daysUntil(iso: string): number {
   return Math.max(0, Math.ceil(diff / 86_400_000));
 }
 
-// ─── FD Card Component ────────────────────────────────────────────────────────
+// FD Card Component 
 
 function FDCard({ fd }: { fd: FixedDeposit }) {
   const days = daysUntil(fd.next_payout_date);
@@ -152,7 +154,7 @@ function FDCard({ fd }: { fd: FixedDeposit }) {
   );
 }
 
-// ─── Main Page Content ────────────────────────────────────────────────────────
+//  Main Page Content
 
 function CustomerFDContent() {
   const searchParams = useSearchParams();
@@ -323,7 +325,7 @@ function CustomerFDContent() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               {fds.map((fd) => (
-                <FDCard key={fd.fd_acc_no} fd={fd} />
+                <ActiveFD key={fd.fd_acc_no} fdAccNo={fd.fd_acc_no} />
               ))}
             </div>
           </section>
@@ -377,8 +379,8 @@ function CustomerFDContent() {
                           type="button"
                           onClick={() => setPlanId(plan.id)}
                           className={`rounded-lg border p-2 text-center transition cursor-pointer ${planId === plan.id
-                              ? "border-[#06B6D4] bg-white text-[#001F3F] shadow-xs"
-                              : "border-gray-200 bg-transparent text-[#6B7280] hover:bg-white/50"
+                            ? "border-[#06B6D4] bg-white text-[#001F3F] shadow-xs"
+                            : "border-gray-200 bg-transparent text-[#6B7280] hover:bg-white/50"
                             }`}
                         >
                           <p className="text-xs font-bold">{plan.label}</p>
@@ -415,8 +417,8 @@ function CustomerFDContent() {
                   {formResult && (
                     <div
                       className={`flex items-start gap-2 rounded-lg p-3 text-xs border ${formResult.ok
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "border-rose-200 bg-rose-50 text-rose-800"
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        : "border-rose-200 bg-rose-50 text-rose-800"
                         }`}
                     >
                       {formResult.ok ? (
@@ -460,3 +462,4 @@ export default function CustomerFDPage() {
     </Suspense>
   );
 }
+

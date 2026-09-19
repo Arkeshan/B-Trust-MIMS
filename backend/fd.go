@@ -369,7 +369,7 @@ type FDStatus struct {
 	AccountNo             string          `json:"account_no"`
 	Investment            decimal.Decimal `json:"investment"`
 	StartDate             time.Time       `json:"start_date"`
-	MaturityDate          time.Time       `json:"due_date"`
+	DueDate               time.Time       `json:"due_date"`
 	ElapsedMonths         int             `json:"elapsed_months"`
 	InterestRate          decimal.Decimal `json:"interest_rate"`
 	TermMonths            int             `json:"term_months"`
@@ -413,7 +413,7 @@ func FDStatusHandler(db *sql.DB) http.HandlerFunc {
 			&s.AccountNo,
 			&s.Investment,
 			&s.StartDate,
-			&s.MaturityDate,
+			&s.DueDate,
 			&s.ElapsedMonths,
 			&s.InterestRate,
 			&s.TermMonths,
