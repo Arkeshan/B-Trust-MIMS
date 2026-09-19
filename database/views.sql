@@ -84,6 +84,22 @@ JOIN SAVINGS_ACCOUNT sa ON sa.account_no = ah.account_no
 LEFT JOIN TRANSACTION t ON t.account_no = sa.account_no
 GROUP BY c.person_id, p.first_name, p.last_name;
 
+
+create or replace VIEW vw_fd_status as
+select FIXED_DEPOSIT.FD_ACC_NO,
+FIXED_DEPOSIT.fd_acc_no,FIXED_DEPOSIT.account_no,
+FIXED_DEPOSIT.fd_plan_id,
+FIXED_DEPOSIT.investment,
+FIXED_DEPOSIT.start_date,
+FD_PLAN.term_months,
+FD_PLAN.interest_rate,
+TIMESTAMPDIFF(MONTH, fd.start_date, CURDATE()) AS elapsed_months,
+round(FIXED_DEPOSIT.investment*(FD_PLAN.interest_rate/100*12)*(TIMESTAMPDIFF(MONTH,FIXED_DEPOSIT.start_date,CURDATE())),2) AS Current_Interest,
+FIXED_DEPOSIT.start_date + INTERVAL FD_PLAN.term_months MONTH as Due_Date,
+FIXED_DEPOSIT.next_payout_date,
+FIXED_DEPOSIT.interest_paid_to_date
+from FIXED_DEPOSIT join FD_PLAN using(fd_plan_id);
+
 CREATE OR REPLACE VIEW vw_recent_txn AS
 SELECT * 
 FROM TRANSACTION 
