@@ -115,7 +115,7 @@ CREATE TABLE ACCOUNT_HOLDER(
 
 CREATE TABLE FIXED_DEPOSIT(
     fd_acc_no VARCHAR(12) PRIMARY KEY,
-    account_no VARCHAR(12) NOT NULL,
+    account_no VARCHAR(12) NOT NULL UNIQUE,
     fd_plan_id INT NOT NULL,
     investment DECIMAL(15,2) NOT NULL,
     start_date DATE NOT NULL,
