@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
-  RefreshCw,
   PiggyBank,
   Calendar,
   Clock,
-  TrendingUp,
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
@@ -71,7 +69,6 @@ function daysUntil(iso: string): number {
 function FDCard({ fd }: { fd: FixedDeposit }) {
   const days = daysUntil(fd.next_payout_date);
   const term = fd.plan?.term_months || 12;
-  const rate = fd.plan?.interest_rate || 0;
   const pct = Math.min(
     100,
     (fd.interest_paid_so_far / (fd.investment || 1)) * 100 * (12 / term),
@@ -99,17 +96,12 @@ function FDCard({ fd }: { fd: FixedDeposit }) {
         </span>
       </div>
 
-      <div className="mb-2">
+      <div>
         <span className="text-xs text-[#6B7280]">Principal Investment</span>
         <p className="text-2xl font-extrabold text-[#001F3F] tracking-tight">
           {fmtLKR(fd.investment)}
         </p>
       </div>
-
-      <p className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-        <TrendingUp size={14} />
-        {rate}% p.a. · {fmtLKR(fd.interest_paid_so_far)} earned to date
-      </p>
 
       {/* Progress bar */}
       <div className="mt-4 h-1.5 w-full rounded-full bg-gray-300/70 overflow-hidden">
@@ -136,11 +128,11 @@ function FDCard({ fd }: { fd: FixedDeposit }) {
             {fmtDate(fd.maturity_date)}
           </p>
         </div>
-        <div className="col-span-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-center">
-          <p className="text-[11px] font-medium text-amber-800">
+        <div className="col-span-2 rounded-lg bg-white border border-gray-200/80 p-2.5 text-center">
+          <p className="text-[11px] font-medium text-[#6B7280]">
             Next Payout Cycle
           </p>
-          <p className="text-sm font-bold text-amber-900">
+          <p className="text-sm font-bold text-[#001F3F] mt-0.5">
             {days === 0
               ? "Due Today"
               : `In ${days} day${days !== 1 ? "s" : ""}`}{" "}
@@ -196,7 +188,7 @@ export default function CustomerFDPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [linkedParam]);
 
   useEffect(() => {
     loadFDs();
@@ -255,28 +247,18 @@ export default function CustomerFDPage() {
     <main className="min-h-screen bg-[#FFFFFF] text-[#000000] font-sans">
       {/* Header */}
       <header className="border-b border-gray-200 bg-[#FFFFFF] px-6 py-5 sm:px-10">
-        <div className="mx-auto max-w-7xl flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/customer/dashboard"
-              className="rounded-lg border border-gray-200 p-2 text-[#001F3F] hover:bg-[#F3F4F6] transition"
-            >
-              <ArrowLeft size={18} />
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[#001F3F]">
-                Fixed Deposits
-              </h1>
-            </div>
-          </div>
-
-          <button
-            onClick={loadFDs}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-[#F3F4F6] px-3.5 py-2 text-xs font-semibold text-[#001F3F] hover:border-[#06B6D4] transition cursor-pointer"
+        <div className="mx-auto max-w-7xl flex items-center gap-3">
+          <Link
+            href="/customer/dashboard"
+            className="rounded-lg border border-gray-200 p-2 text-[#001F3F] hover:bg-[#F3F4F6] transition"
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            Refresh List
-          </button>
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#001F3F]">
+              Fixed Deposits
+            </h1>
+          </div>
         </div>
       </header>
 
@@ -288,11 +270,6 @@ export default function CustomerFDPage() {
               <h2 className="text-base font-bold text-[#001F3F] uppercase tracking-wider">
                 Active Term Investments
               </h2>
-              {fds.length > 0 && (
-                <span className="rounded-full bg-cyan-100 px-2.5 py-0.5 text-xs font-bold text-[#001F3F]">
-                  {fds.length} Active
-                </span>
-              )}
             </div>
 
             {loading && (
@@ -330,7 +307,6 @@ export default function CustomerFDPage() {
 
           {/* ── Right Column: Management Actions ── */}
           <aside className="space-y-6">
-            {/* Open FD Form: unavailable when the selected account already has an FD. */}
             {(!linkedParam || fds.length === 0) && (
               <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-6 shadow-sm">
                 <h3 className="text-base font-bold text-[#001F3F]">
@@ -342,7 +318,6 @@ export default function CustomerFDPage() {
                 </p>
 
                 <form onSubmit={handleOpenFD} className="mt-5 space-y-4">
-                  {/* Savings Account */}
                   <div>
                     <label
                       htmlFor="fd-account-no"
@@ -361,7 +336,6 @@ export default function CustomerFDPage() {
                     />
                   </div>
 
-                  {/* Plan Selection */}
                   <div>
                     <label className="block text-xs font-semibold uppercase text-[#6B7280] mb-1">
                       Select Plan Tier
@@ -391,7 +365,6 @@ export default function CustomerFDPage() {
                     </div>
                   </div>
 
-                  {/* Deposit Investment */}
                   <div>
                     <label
                       htmlFor="fd-investment"
@@ -412,7 +385,6 @@ export default function CustomerFDPage() {
                     />
                   </div>
 
-                  {/* Form Message */}
                   {formResult && (
                     <div
                       className={`flex items-start gap-2 rounded-lg p-3 text-xs border ${
