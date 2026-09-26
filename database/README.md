@@ -17,11 +17,12 @@ Uses InnoDB for ACID compliance, foreign keys, row locking, and triggers.
 - OTP_TOKEN: 2FA tokens - Arkeshan
 - NOTIFICATION: user alerts - Arkeshan
 - ACCOUNT_HOLDER: links person to account, supports joint accounts - Arkeshan
-- FIXED_DEPOSIT: fixed deposit contracts - Dinisuru, Nimthara
+- FIXED_DEPOSIT: fixed deposit contracts with unique constraint on account_no (1 FD per savings account) - Dinisuru, Nimthara
 - TRANSACTION: ledger for deposits, withdrawals, transfers, interest - Arkeshan
 
 ## Views (views.sql)
 
+- vw_login_auth: user credentials, password hash, role, status for login verification - Sathika
 - vw_agent_transaction_summary: count and volume of transactions per agent - Sathika
 - vw_account_transaction_summary: summary of deposits, withdrawals, interest per account - Sathika
 - vw_active_fd_payouts: active FDs due for payout - Sathika

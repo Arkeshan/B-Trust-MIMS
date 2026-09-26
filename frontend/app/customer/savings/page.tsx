@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Wallet,
@@ -8,9 +8,7 @@ import {
   ArrowUpRight,
   PlusCircle,
   ExternalLink,
-  ShieldCheck,
   AlertCircle,
-  X,
 } from "lucide-react";
 
 type Transaction = {
@@ -29,6 +27,11 @@ type AccountHistory = {
   has_fixed_deposit?: boolean;
 };
 
+type CustomerAccount = {
+  account_no: string;
+  balance: string;
+};
+
 const currency = new Intl.NumberFormat("en-LK", {
   style: "currency",
   currency: "LKR",
@@ -36,46 +39,70 @@ const currency = new Intl.NumberFormat("en-LK", {
 });
 
 export default function SavingsAccountPage() {
-  const [accountInput, setAccountInput] = useState("ACC000000001");
-  const [activeAccount, setActiveAccount] = useState<AccountHistory | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(false);
+  const [myAccounts, setMyAccounts] = useState<CustomerAccount[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState("");
+  const [activeAccount, setActiveAccount] = useState<AccountHistory | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // FD Creation Modal State
-  const [isFdModalOpen, setIsFdModalOpen] = useState(false);
-  const [fdAmount, setFdAmount] = useState("");
-  const [fdPlan, setFdPlan] = useState("1");
-  const [fdSubmitting, setFdSubmitting] = useState(false);
-  const [fdModalError, setFdModalError] = useState("");
-
-  const MIN_SAVINGS_BALANCE = 1000;
-
-  async function loadAccount(accountNumber: string) {
-    const acc = accountNumber.trim();
-    if (!acc) {
-      setError("Please enter a valid account number.");
-      return;
+  // On mount, fetch the logged-in user's own accounts
+  useEffect(() => {
+    async function fetchMyAccounts() {
+      setLoading(true);
+      setError("");
+      try {
+        const sessionId = localStorage.getItem("session_id") || "";
+        const res = await fetch("/api/customer/accounts", {
+          headers: { Authorization: `Bearer ${sessionId}` },
+          credentials: "include",
+        });
+        if (!res.ok) throw new Error("Could not load your accounts.");
+        const accounts: CustomerAccount[] = await res.json();
+        setMyAccounts(accounts);
+        if (accounts.length > 0) {
+          setSelectedAccount(accounts[0].account_no);
+          await loadAccount(accounts[0].account_no, sessionId);
+        } else {
+          setError("No active savings accounts found for your profile.");
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to load accounts.");
+      } finally {
+        setLoading(false);
+      }
     }
+    fetchMyAccounts();
+  }, []);
+
+  async function loadAccount(accountNumber: string, sessionOverride?: string) {
+    const acc = accountNumber.trim();
+    if (!acc) return;
 
     setLoading(true);
     setError("");
 
     try {
-      // 1. Fetch Savings Account History & Balance
+      const sessionId = sessionOverride || localStorage.getItem("session_id") || "";
+
       const response = await fetch(
-        `http://localhost:8080/api/account/${encodeURIComponent(acc)}/history`,
+        `/api/account/${encodeURIComponent(acc)}/history`,
+        {
+          headers: { Authorization: `Bearer ${sessionId}` },
+          credentials: "include",
+        }
       );
       if (!response.ok) {
         throw new Error(`${acc}: Unable to load account history`);
       }
       const data: AccountHistory = await response.json();
 
-      // 2. Check whether this account already has an FD.
+      // Check whether this account already has an FD
       let hasFd = false;
       try {
-        const fdList = await fetch("http://localhost:8080/api/fd/list");
+        const fdList = await fetch("/api/fd/list", {
+          headers: { Authorization: `Bearer ${sessionId}` },
+          credentials: "include",
+        });
         if (fdList.ok) {
           const fdData: { account_no?: string }[] = await fdList.json();
           hasFd = fdData.some((fd) => fd.account_no === acc);
@@ -91,68 +118,16 @@ export default function SavingsAccountPage() {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Unable to load account details.",
+          : "Unable to load account details."
       );
     } finally {
       setLoading(false);
     }
   }
 
-  useEffect(() => {
-    loadAccount(accountInput);
-  }, []);
-
-  function handleSearch(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    loadAccount(accountInput);
-  }
-
-  async function handleOpenFdSubmit(e: FormEvent) {
-    e.preventDefault();
-    setFdModalError("");
-
-    const investmentAmount = parseFloat(fdAmount);
-    if (isNaN(investmentAmount) || investmentAmount <= 0) {
-      setFdModalError("Please enter a valid positive deposit amount.");
-      return;
-    }
-
-    if (!activeAccount) return;
-
-    if (activeAccount.balance - investmentAmount < MIN_SAVINGS_BALANCE) {
-      setFdModalError(
-        `Insufficient balance. You must maintain at least ${currency.format(
-          MIN_SAVINGS_BALANCE,
-        )} in your savings account after opening this FD.`,
-      );
-      return;
-    }
-
-    setFdSubmitting(true);
-    try {
-      const res = await fetch("http://localhost:8080/api/fd/open", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          account_no: activeAccount.account_no,
-          investment: investmentAmount,
-          fd_plan_id: parseInt(fdPlan, 10),
-        }),
-      });
-
-      if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(errText || "Failed to create fixed deposit.");
-      }
-
-      setIsFdModalOpen(false);
-      setFdAmount("");
-      loadAccount(activeAccount.account_no);
-    } catch (err: any) {
-      setFdModalError(err.message || "An error occurred.");
-    } finally {
-      setFdSubmitting(false);
-    }
+  function handleAccountSwitch(accountNo: string) {
+    setSelectedAccount(accountNo);
+    loadAccount(accountNo);
   }
 
   return (
@@ -174,23 +149,23 @@ export default function SavingsAccountPage() {
             </div>
           </div>
 
-          {/* Account Selector */}
-          <form onSubmit={handleSearch} className="flex items-center gap-2">
-            <input
-              type="text"
-              value={accountInput}
-              onChange={(e) => setAccountInput(e.target.value)}
-              placeholder="Account Number"
-              className="h-10 rounded-lg border border-gray-300 bg-[#F3F4F6] px-3 text-sm text-[#000000] outline-none transition focus:border-[#06B6D4]"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="h-10 rounded-lg bg-[#001F3F] px-4 text-xs font-semibold text-white transition hover:bg-[#001F3F]/90 disabled:opacity-50"
-            >
-              {loading ? "..." : "Select"}
-            </button>
-          </form>
+          {/* Account switcher (only shown if user has multiple accounts) */}
+          {myAccounts.length > 1 && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#6B7280] uppercase">Account:</span>
+              <select
+                value={selectedAccount}
+                onChange={(e) => handleAccountSwitch(e.target.value)}
+                className="h-10 rounded-lg border border-gray-300 bg-[#F3F4F6] px-3 text-sm font-mono text-[#000000] outline-none transition focus:border-[#06B6D4]"
+              >
+                {myAccounts.map((acc) => (
+                  <option key={acc.account_no} value={acc.account_no}>
+                    {acc.account_no}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </header>
 
@@ -200,6 +175,10 @@ export default function SavingsAccountPage() {
             <AlertCircle size={18} />
             <span>{error}</span>
           </div>
+        )}
+
+        {loading && !activeAccount && (
+          <div className="text-center py-12 text-sm text-[#6B7280]">Loading your account...</div>
         )}
 
         {/* Account Summary & FD Actions */}
@@ -220,9 +199,7 @@ export default function SavingsAccountPage() {
                   {activeAccount.account_no}
                 </p>
                 <div className="mt-4">
-                  <span className="text-xs text-[#6B7280]">
-                    Available Balance
-                  </span>
+                  <span className="text-xs text-[#6B7280]">Available Balance</span>
                   <p className="text-3xl font-extrabold tracking-tight text-[#001F3F]">
                     {currency.format(activeAccount.balance)}
                   </p>
@@ -274,8 +251,8 @@ export default function SavingsAccountPage() {
                     <ArrowUpRight size={14} />
                   </Link>
                 ) : (
-                  <button
-                    onClick={() => setIsFdModalOpen(true)}
+                  <Link
+                    href={`/customer/fd?account=${encodeURIComponent(activeAccount.account_no)}`}
                     className="flex w-full items-center justify-between rounded-lg bg-[#001F3F] px-3 py-2.5 text-xs font-semibold text-white hover:bg-[#001F3F]/90 transition"
                   >
                     <span className="flex items-center gap-1.5">
@@ -283,7 +260,7 @@ export default function SavingsAccountPage() {
                       Create Fixed Deposit
                     </span>
                     <ArrowUpRight size={14} />
-                  </button>
+                  </Link>
                 )}
               </div>
             </div>
@@ -374,99 +351,6 @@ export default function SavingsAccountPage() {
           </section>
         )}
       </div>
-
-      {/* Modal: Open Fixed Deposit */}
-      {isFdModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl border border-gray-200">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <div className="flex items-center gap-2 text-[#001F3F]">
-                <ShieldCheck className="text-[#06B6D4]" size={20} />
-                <h3 className="text-lg font-bold">Open Fixed Deposit</h3>
-              </div>
-              <button
-                onClick={() => setIsFdModalOpen(false)}
-                className="text-gray-400 hover:text-black transition"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleOpenFdSubmit} className="mt-4 space-y-4">
-              {fdModalError && (
-                <div className="rounded-lg bg-red-50 p-3 text-xs text-red-600 border border-red-200">
-                  {fdModalError}
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-[#6B7280] uppercase">
-                  Linked Savings Account
-                </label>
-                <input
-                  type="text"
-                  disabled
-                  value={activeAccount?.account_no ?? ""}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-gray-100 px-3 py-2 text-sm font-mono text-gray-700"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#6B7280] uppercase">
-                  Select FD Plan
-                </label>
-                <select
-                  value={fdPlan}
-                  onChange={(e) => setFdPlan(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-[#F3F4F6] px-3 py-2 text-sm text-[#000000] focus:border-[#06B6D4] outline-none"
-                >
-                  <option value="1">Plan A - 6 Months (13% p.a.)</option>
-                  <option value="2">Plan B - 12 Months (14% p.a.)</option>
-                  <option value="3">Plan C - 36 Months (15% p.a.)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[#6B7280] uppercase">
-                  Deposit Amount (LKR)
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  required
-                  placeholder="e.g. 50000"
-                  value={fdAmount}
-                  onChange={(e) => setFdAmount(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-[#F3F4F6] px-3 py-2 text-sm text-[#000000] focus:border-[#06B6D4] outline-none"
-                />
-                <p className="mt-1 text-[11px] text-[#6B7280]">
-                  Available:{" "}
-                  {activeAccount ? currency.format(activeAccount.balance) : "—"}{" "}
-                  (Must maintain {currency.format(MIN_SAVINGS_BALANCE)}{" "}
-                  balance).
-                </p>
-              </div>
-
-              <div className="mt-6 flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsFdModalOpen(false)}
-                  className="rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-[#6B7280] hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={fdSubmitting}
-                  className="rounded-lg bg-[#001F3F] px-4 py-2 text-xs font-semibold text-white hover:bg-[#001F3F]/90 disabled:opacity-50"
-                >
-                  {fdSubmitting ? "Creating..." : "Confirm & Deposit"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

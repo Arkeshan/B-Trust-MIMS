@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Wallet,
@@ -7,19 +9,54 @@ import {
   ArrowLeftRight,
   Settings,
   ArrowUpRight,
+  LogOut,
 } from "lucide-react";
 
 export default function CustomerDashboard() {
+  const router = useRouter();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      const sessionId = localStorage.getItem("session_id") || "";
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionId}`,
+        },
+        credentials: "include",
+      });
+    } catch {
+      // Even if the request fails, clear local storage and redirect
+    }
+    localStorage.removeItem("session_id");
+    localStorage.removeItem("username");
+    localStorage.removeItem("role");
+    router.push("/login");
+  }
+
   return (
     <main className="min-h-screen bg-[#FFFFFF] text-[#000000] font-sans">
       <header className="border-b border-gray-200 bg-[#FFFFFF] px-6 py-7 sm:px-10 sm:py-8">
-        <div className="mx-auto max-w-7xl">
-          <span className="block text-3xl font-extrabold uppercase leading-none tracking-[0.12em] text-[#06B6D4] sm:text-4xl">
-            B-Trust MIMS
-          </span>
-          <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#001F3F] sm:text-3xl">
-            Customer Dashboard
-          </h1>
+        <div className="mx-auto max-w-7xl flex items-center justify-between">
+          <div>
+            <span className="block text-3xl font-extrabold uppercase leading-none tracking-[0.12em] text-[#06B6D4] sm:text-4xl">
+              B-Trust MIMS
+            </span>
+            <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#001F3F] sm:text-3xl">
+              Customer Dashboard
+            </h1>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-[#001F3F] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+          >
+            <LogOut size={16} />
+            {loggingOut ? "Logging out..." : "Logout"}
+          </button>
         </div>
       </header>
 

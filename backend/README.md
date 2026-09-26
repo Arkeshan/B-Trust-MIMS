@@ -9,6 +9,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 
 - GET / - Health check (Arkeshan)
 - POST /api/auth/login - User login with bcrypt (Achira, Sathika)
+- POST /api/auth/logout - User logout, deletes session from DB and clears cookie
 - GET /api/customer/accounts - List savings accounts for logged in user (Arkeshan)
 - GET /api/account/lookup?account_no= - Lookup account holder name with masking (Arkeshan)
 - POST /api/customer/transfer - Fund transfer between accounts, ACID transaction (Arkeshan)
@@ -32,6 +33,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 
 ### auth.go (Achira, Sathika, Arkeshan)
 - LoginHandler: checks username and password against db using bcrypt, sets session
+- LogoutHandler: deletes active session from USER_SESSION and expires session_id cookie
 - getAuthenticatedUser: reads session token from header or cookie
 - generateSessionToken: crypto/rand session token generator
 
@@ -58,7 +60,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 
 ### main.go (Arkeshan, Achira)
 - enableCORS: CORS middleware
-- main: db setup, route registration, dev user seeding, starts server on :8080
+- main: db setup, route registration, sub-path dispatcher for /api/account/ routes, dev user seeding, starts server on :8080
 
 ## Running
 

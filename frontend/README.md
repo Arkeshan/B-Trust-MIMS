@@ -6,16 +6,16 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
 ## Pages
 
 - `/login` (`app/login/page.tsx`) - Achira, Sathika
-  Login form with role redirect:
+  Login form with dashboard color theme (navy/cyan), stores session in localStorage, role redirects:
   - customer -> `/customer/dashboard`
   - staff -> `/agent/transfer`
   - admin -> `/admin/reports`
 - `/customer/dashboard` (`app/customer/dashboard/page.tsx`) - Nimthara
-  Main navigation cards for customer features.
+  Main navigation cards for customer features with header Logout button (clears session and cookie).
 - `/customer/savings` (`app/customer/savings/page.tsx`) - Nimthara, Arkeshan
-  Savings balance display, linked FD status, and transaction history table.
+  Auto-loads customer's accounts with dropdown switcher, balance display, transaction history table, and direct link to open an FD.
 - `/customer/fd` (`app/customer/fd/page.tsx`) - Dinisuru, Nimthara, Arkeshan
-  Open new fixed deposit and view active FDs.
+  Open new fixed deposit with eligible account dropdown (filters out accounts that already have an FD), and view active FDs.
 - `/customer/transfer` (`app/customer/transfer/page.tsx`) - Arkeshan
   3-row transfer form: recipient account lookup with masked name, balance check, transfer receipt with reference code.
 - `/agent/transfer` (`app/agent/transfer/page.tsx`) - Arkeshan
