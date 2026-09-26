@@ -6,17 +6,18 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func homePage(w http.ResponseWriter, r *http.Request){
+func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "B-Trust Backend is running!")
 }
 
-func enableCORS(next http.HandlerFunc) http.HandlerFunc{
+func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
@@ -30,7 +31,7 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc{
 	}
 }
 
-func main(){
+func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file: ", err)
@@ -41,31 +42,31 @@ func main(){
 	dbPort := os.Getenv("DB_PORT")
 	dbName := os.Getenv("DB_NAME")
 
-	if dbUser=="" {
-		dbUser="root"
+	if dbUser == "" {
+		dbUser = "root"
 	}
-	if dbHost==""{
-		dbHost="127.0.0.1"
+	if dbHost == "" {
+		dbHost = "127.0.0.1"
 	}
-	if dbPort==""{
-		dbPort="3306"
+	if dbPort == "" {
+		dbPort = "3306"
 	}
-	if dbName == ""{
+	if dbName == "" {
 		dbName = "btrust"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPassword, dbHost, dbPort, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error connecting to database: ", err)
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err!= nil{
+	if err := db.Ping(); err != nil {
 		log.Fatal("Error pinging database: ", err)
 	}
 
-	hashedPwd, _ :=bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
 	_, err = db.Exec(`
         INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
 		VALUES (?, ?, ?, ?, ?)
@@ -81,21 +82,33 @@ func main(){
 	}
 
 	http.HandleFunc("/", homePage)
-	http.Handle("/api/account/", AccountHistoryHandler(db))
 	http.Handle("/api/reports/", ReportsHandler(db))
 
 	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
 	http.HandleFunc("/api/fd/new", enableCORS(OpenFDHandler(db)))
 	http.HandleFunc("/api/fd/list", enableCORS(ListFDHandler(db)))
+	http.HandleFunc("/api/fd/status/", enableCORS(FDStatusHandler(db)))
 	http.HandleFunc("/api/cron/interest", enableCORS(CronInterestHandler(db)))
 
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
+	http.HandleFunc("/api/auth/logout", enableCORS(LogoutHandler(db)))
 
 	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
+
+	// Customer Portal Routes — dispatch account sub-paths
+	http.HandleFunc("/api/account/", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/history/recent") {
+			RecentHistoryHandler(db)(w, r)
+		} else if strings.HasSuffix(r.URL.Path, "/history") {
+			AccountHistoryHandler(db)(w, r)
+		} else {
+			http.Error(w, "not found", http.StatusNotFound)
+		}
+	}))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))

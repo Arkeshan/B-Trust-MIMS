@@ -73,32 +73,30 @@ BEGIN
             2
         );
 
+        -- Lock savings account row for atomic balance update
         SELECT balance
         INTO   v_new_balance
         FROM   SAVINGS_ACCOUNT
         WHERE  account_no = v_account_no
-        FOR UPDATE;                         
+        FOR UPDATE;
 
-        SET v_new_balance = v_new_balance + v_payout_amount;
-
-        UPDATE SAVINGS_ACCOUNT
-        SET    balance = v_new_balance
-        WHERE  account_no = v_account_no;
-
+        -- Trigger before_transaction_insert handles balance_after calculation and SAVINGS_ACCOUNT update
         INSERT INTO TRANSACTION (
             account_no,
             staff_person_id,
             txn_type,
             amount,
             balance_after,
-            timestamp
+            timestamp,
+            remarks
         ) VALUES (
             v_account_no,
-            NULL,                           
+            NULL,
             'interest',
             v_payout_amount,
-            v_new_balance,
-            NOW()
+            (v_new_balance + v_payout_amount),
+            NOW(),
+            CONCAT('Monthly interest payout for ', v_fd_acc_no)
         );
 
         UPDATE FIXED_DEPOSIT

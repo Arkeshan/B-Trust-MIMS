@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 // $$$ Data Models $$$
 // Model for customer savings accounts.
@@ -298,8 +300,16 @@ export default function CustomerTransferPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         
         {/* Brand Header */}
-        <div className="text-left">
-          <h1 className="text-3xl font-bold text-[#001F3F] tracking-tight">Fund Transfer</h1>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/customer/dashboard"
+            className="rounded-lg border border-gray-200 bg-white p-2 text-[#001F3F] hover:bg-gray-100 transition shadow-xs"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold text-[#001F3F] tracking-tight">Fund Transfer</h1>
+          </div>
         </div>
 
         {/* $$$ State-Driven Views $$$ */}

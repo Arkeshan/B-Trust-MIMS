@@ -121,6 +121,7 @@ CREATE TABLE FIXED_DEPOSIT(
     start_date DATE NOT NULL,
     interest_paid_to_date DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     next_payout_date DATE NOT NULL,
+    UNIQUE KEY uq_fd_account_no (account_no),
     FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no),
     FOREIGN KEY (fd_plan_id) REFERENCES FD_PLAN(fd_plan_id)
 );

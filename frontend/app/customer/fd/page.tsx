@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -11,8 +11,9 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
+import ActiveFD from "./components/ActiveFD";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// Type
 
 interface FDPlan {
   fd_plan_id: number;
@@ -31,9 +32,7 @@ interface FixedDeposit {
   interest_paid_so_far: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+// Helpers
 
 function fmtDate(iso: string): string {
   if (!iso) return "—";
@@ -64,7 +63,7 @@ function daysUntil(iso: string): number {
   return Math.max(0, Math.ceil(diff / 86_400_000));
 }
 
-// ─── FD Card Component ────────────────────────────────────────────────────────
+// FD Card Component
 
 function FDCard({ fd }: { fd: FixedDeposit }) {
   const days = daysUntil(fd.next_payout_date);
@@ -144,13 +143,19 @@ function FDCard({ fd }: { fd: FixedDeposit }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+//  Main Page Content
 
-export default function CustomerFDPage() {
+function CustomerFDContent() {
   const searchParams = useSearchParams();
   const linkedParam = searchParams.get("account") ?? "";
 
   const [fds, setFds] = useState<FixedDeposit[]>([]);
+  const [myAccounts, setMyAccounts] = useState<
+    { account_no: string; balance: string }[]
+  >([]);
+  const [eligibleAccounts, setEligibleAccounts] = useState<
+    { account_no: string; balance: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -166,23 +171,64 @@ export default function CustomerFDPage() {
 
   // Set account from query param if available
   useEffect(() => {
-    if (linkedParam) {
+    if (
+      linkedParam &&
+      eligibleAccounts.some((a) => a.account_no === linkedParam)
+    ) {
       setAccountNo(linkedParam);
     }
-  }, [linkedParam]);
+  }, [linkedParam, eligibleAccounts]);
 
   const loadFDs = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await fetch(`${API}/api/fd/list`);
-      if (!res.ok) throw new Error(await res.text());
-      const data: FixedDeposit[] = await res.json();
+      const token = localStorage.getItem("token") || "";
+      const headers = {
+        Authorization: `Bearer ${token}`,
+      };
+
+      const [fdsRes, accountsRes] = await Promise.all([
+        fetch(`/api/fd/list`, {
+          headers,
+          credentials: "include",
+        }),
+        fetch(`/api/customer/accounts`, {
+          headers,
+          credentials: "include",
+        }),
+      ]);
+
+      if (!fdsRes.ok) throw new Error(await fdsRes.text());
+      if (!accountsRes.ok) throw new Error(await accountsRes.text());
+
+      const fdsData: FixedDeposit[] = await fdsRes.json();
+      const accountsData: { account_no: string; balance: string }[] =
+        await accountsRes.json();
+
       setFds(
         linkedParam
-          ? (data || []).filter((fd) => fd.account_no === linkedParam)
-          : data || [],
+          ? (fdsData || []).filter((fd) => fd.account_no === linkedParam)
+          : fdsData || [],
       );
+      setMyAccounts(accountsData || []);
+
+      const fdList = fdsData || [];
+      const eligible = (accountsData || []).filter(
+        (acc) => !fdList.some((fd) => fd.account_no === acc.account_no),
+      );
+
+      setEligibleAccounts(eligible);
+
+      if (eligible.length > 0) {
+        if (linkedParam && eligible.some((a) => a.account_no === linkedParam)) {
+          setAccountNo(linkedParam);
+        } else {
+          setAccountNo(eligible[0].account_no);
+        }
+      } else {
+        setAccountNo("");
+      }
     } catch (e) {
       setFetchError((e as Error).message);
     } finally {
@@ -210,9 +256,14 @@ export default function CustomerFDPage() {
     }
 
     try {
-      const res = await fetch(`${API}/api/fd/open`, {
+      const token = localStorage.getItem("token") || "";
+      const res = await fetch(`/api/fd/open`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
         body: JSON.stringify({
           account_no: accountNo.trim(),
           fd_plan_id: planId,
@@ -300,14 +351,20 @@ export default function CustomerFDPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               {fds.map((fd) => (
-                <FDCard key={fd.fd_acc_no} fd={fd} />
+                <ActiveFD key={fd.fd_acc_no} fdAccNo={fd.fd_acc_no} />
               ))}
             </div>
           </section>
 
           {/* ── Right Column: Management Actions ── */}
           <aside className="space-y-6">
-            {(!linkedParam || fds.length === 0) && (
+            {!loading && eligibleAccounts.length === 0 ? (
+              <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-6 shadow-sm">
+                <p className="text-sm font-medium text-[#001F3F] text-center">
+                  All your savings accounts already have a linked fixed deposit.
+                </p>
+              </div>
+            ) : (
               <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-6 shadow-sm">
                 <h3 className="text-base font-bold text-[#001F3F]">
                   Open a Fixed Deposit
@@ -325,15 +382,19 @@ export default function CustomerFDPage() {
                     >
                       Linked Savings Account
                     </label>
-                    <input
+                    <select
                       id="fd-account-no"
-                      type="text"
                       required
-                      placeholder="ACC000000001"
                       value={accountNo}
                       onChange={(e) => setAccountNo(e.target.value)}
                       className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2 font-mono text-sm text-[#000000] focus:border-[#06B6D4] outline-none transition"
-                    />
+                    >
+                      {eligibleAccounts.map((acc) => (
+                        <option key={acc.account_no} value={acc.account_no}>
+                          {acc.account_no}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -418,5 +479,19 @@ export default function CustomerFDPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function CustomerFDPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center text-sm text-gray-500">
+          Loading Fixed Deposits...
+        </div>
+      }
+    >
+      <CustomerFDContent />
+    </Suspense>
   );
 }
