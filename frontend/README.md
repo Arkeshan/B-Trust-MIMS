@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend
 
-## Getting Started
+Next.js 16 (App Router), React 19, TypeScript, and Tailwind CSS 4.
+Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://localhost:8080/api/*` via `next.config.ts`.
 
-First, run the development server:
+## Pages
+
+- `/login` (`app/login/page.tsx`) - Achira, Sathika
+  Login form with role redirect:
+  - customer -> `/customer/dashboard`
+  - staff -> `/agent/transfer`
+  - admin -> `/admin/reports`
+- `/customer/dashboard` (`app/customer/dashboard/page.tsx`) - Nimthara
+  Main navigation cards for customer features.
+- `/customer/savings` (`app/customer/savings/page.tsx`) - Nimthara, Arkeshan
+  Savings balance display, linked FD status, and transaction history table.
+- `/customer/fd` (`app/customer/fd/page.tsx`) - Dinisuru, Nimthara, Arkeshan
+  Open new fixed deposit and view active FDs.
+- `/customer/transfer` (`app/customer/transfer/page.tsx`) - Arkeshan
+  3-row transfer form: recipient account lookup with masked name, balance check, transfer receipt with reference code.
+- `/agent/transfer` (`app/agent/transfer/page.tsx`) - Arkeshan
+  Counter deposit and withdrawal form for bank agents.
+- `/admin/reports` (`app/admin/reports/page.tsx`) - Sathika, Arkeshan
+  5 management reports tabs (Agent Summary, Account Summary, Active FDs, Monthly Interest, Customer Activity).
+
+## Components
+
+- `app/customer/fd/components/ActiveFD.tsx` (Dinisuru)
+  Card showing FD investment amount, progress, earned interest, and next payout date.
+- `components/SavingsHistory.tsx` (Achira)
+  Table showing last 7 days of transactions for an account.
+
+## Running
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Build for production:
+```bash
+npm run build
+npm run start
+```

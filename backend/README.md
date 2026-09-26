@@ -1,0 +1,67 @@
+# Backend
+
+Go service using standard net/http and go-sql-driver/mysql.
+Handles authentication, customer accounts, transfers, staff counter operations, fixed deposits, and reports.
+
+Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with parseTime=true&loc=Local.
+
+## Endpoints
+
+- GET / - Health check (Arkeshan)
+- POST /api/auth/login - User login with bcrypt (Achira, Sathika)
+- GET /api/customer/accounts - List savings accounts for logged in user (Arkeshan)
+- GET /api/account/lookup?account_no= - Lookup account holder name with masking (Arkeshan)
+- POST /api/customer/transfer - Fund transfer between accounts, ACID transaction (Arkeshan)
+- POST /api/txn/deposit - Teller deposit (Arkeshan)
+- POST /api/txn/withdraw - Teller withdrawal (Arkeshan)
+- POST /api/fd/open - Open a new fixed deposit (Dinisuru)
+- GET /api/fd/list - List fixed deposits (Dinisuru)
+- GET /api/fd/status/{id} - Get status of a fixed deposit (Dinisuru)
+- POST /api/cron/interest - Manually run the interest payout procedure (Dinisuru)
+- GET /api/reports/{type} - Get report data (agents, accounts, fds, monthly-interest, customers) (Sathika)
+- GET /api/account/{id}/history - Full transaction history with pagination (Nimthara, Arkeshan)
+- GET /api/account/{id}/history/recent - Last 7 days transactions (Achira)
+
+## Files and Functions
+
+### account.go (Arkeshan, Nimthara)
+- CustomerAccountsHandler: returns accounts belonging to authenticated customer
+- AccountHolderLookupHandler: validates recipient account and masks holder name (e.g. J*** D***)
+- AccountHistoryHandler: paginated account transaction list
+- maskName: helper to mask names
+
+### auth.go (Achira, Sathika, Arkeshan)
+- LoginHandler: checks username and password against db using bcrypt, sets session
+- getAuthenticatedUser: reads session token from header or cookie
+- generateSessionToken: crypto/rand session token generator
+
+### fd.go (Dinisuru)
+- OpenFDHandler: creates new fixed deposit linked to savings account
+- ListFDHandler: lists all FDs with terms and dates
+- FDStatusHandler: returns FD progress from vw_fd_status
+- CronInterestHandler: calls ProcessFDInterest stored procedure
+
+### reports.go (Sathika)
+- ReportsHandler: maps report type to SQL views and returns json data
+- reportTypeFromPath: helper to grab report name from URL
+- rowsToMaps: helper to convert sql rows to map slice
+
+### savings.go (Achira)
+- RecentHistoryHandler: queries vw_recent_txn for past 7 days transactions
+
+### transfer.go (Arkeshan)
+- CustomerTransferHandler: atomic transfer between two accounts. Locks source row with FOR UPDATE, inserts withdrawal (trigger validates balance), inserts deposit, returns transfer reference
+- generateTransferRef: generates unique TRF... reference number
+
+### txn.go (Arkeshan)
+- ProcessTransaction: counter deposit/withdrawal for staff, uses DB triggers for balance calculations
+
+### main.go (Arkeshan, Achira)
+- enableCORS: CORS middleware
+- main: db setup, route registration, dev user seeding, starts server on :8080
+
+## Running
+
+```bash
+go run .
+```
