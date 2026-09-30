@@ -110,6 +110,8 @@ func main() {
 		}
 	}))
 
+	http.HandleFunc("/api/agent/customer/register", enableCORS(RegisterCustomerHandler(db)))
+
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
