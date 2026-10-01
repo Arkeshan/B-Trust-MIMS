@@ -169,3 +169,54 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 		})
 	}
 }
+
+// LogoutHandler deletes the active session from USER_SESSION and clears the session cookie.
+func LogoutHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Read session token from cookie or Authorization header
+		var token string
+		if cookie, err := r.Cookie("session_id"); err == nil {
+			token = cookie.Value
+		} else {
+			authHeader := r.Header.Get("Authorization")
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				token = strings.TrimPrefix(authHeader, "Bearer ")
+			} else if authHeader != "" {
+				token = authHeader
+			}
+		}
+
+		// Delete session from database
+		if token != "" {
+			_, _ = db.ExecContext(r.Context(), "DELETE FROM USER_SESSION WHERE session_id = ?", token)
+		}
+
+		// Clear the session cookie
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_id",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		})
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]string{"status": "logged_out"})
+	}
+}

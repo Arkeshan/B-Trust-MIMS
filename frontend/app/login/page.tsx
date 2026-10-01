@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { LogIn, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,11 +17,10 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/auth/login", {
+      const res = await fetch("/api/auth/login", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ username, password }),
       });
 
@@ -30,13 +30,18 @@ export default function LoginPage() {
         throw new Error(data.error || "Login failed. Please check your credentials.");
       }
 
+      // Store session info for frontend use
+      localStorage.setItem("session_id", data.session_id || "");
+      localStorage.setItem("username", data.username || "");
+      localStorage.setItem("role", data.role || "");
+
       const role = (data.role || "").toLowerCase();
       if (role === "staff") {
-        router.push("/agent/dashboard");
+        router.push("/agent/transfer");
       } else if (role === "customer") {
         router.push("/customer/dashboard");
       } else if (role === "admin") {
-        router.push("/admin");
+        router.push("/admin/reports");
       } else {
         router.push("/customer/dashboard");
       }
@@ -48,32 +53,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12 text-slate-100 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-8 shadow-2xl backdrop-blur-sm">
+    <main className="flex min-h-screen items-center justify-center bg-[#FFFFFF] px-4 py-12 font-sans">
+      <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-400">
+          <span className="block text-3xl font-extrabold uppercase leading-none tracking-[0.12em] text-[#06B6D4]">
             B-Trust MIMS
-          </p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white">
+          </span>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#001F3F]">
             Sign in to your account
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
+          </h1>
+          <p className="mt-2 text-sm text-[#6B7280]">
             Enter your credentials to access the banking portal
           </p>
         </div>
 
-        {error && (
-          <div className="rounded-lg border border-red-500/30 bg-red-950/40 p-3 text-sm text-red-300">
-            {error}
-          </div>
-        )}
+        <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-8 shadow-sm">
+          {error && (
+            <div className="mb-6 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+              <AlertCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4">
+          <form className="space-y-5" onSubmit={handleLogin}>
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-slate-300"
+                className="block text-xs font-semibold uppercase tracking-wider text-[#6B7280]"
               >
                 Username
               </label>
@@ -84,15 +90,15 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. agent_achira"
-                className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-slate-100 placeholder-slate-500 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                placeholder="e.g. cust_1"
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-slate-300"
+                className="block text-xs font-semibold uppercase tracking-wider text-[#6B7280]"
               >
                 Password
               </label>
@@ -104,20 +110,21 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1 block w-full rounded-lg border border-slate-700 bg-slate-800/80 px-4 py-2.5 text-slate-100 placeholder-slate-500 shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4]"
               />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex w-full justify-center rounded-lg bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-md transition-colors hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#001F3F] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#001F3F]/90 disabled:opacity-50"
+            >
+              <LogIn size={16} />
+              {loading ? "Signing in..." : "Sign in"}
+            </button>
+          </form>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }

@@ -115,12 +115,13 @@ CREATE TABLE ACCOUNT_HOLDER(
 
 CREATE TABLE FIXED_DEPOSIT(
     fd_acc_no VARCHAR(12) PRIMARY KEY,
-    account_no VARCHAR(12) NOT NULL UNIQUE,
+    account_no VARCHAR(12) NOT NULL,
     fd_plan_id INT NOT NULL,
     investment DECIMAL(15,2) NOT NULL,
     start_date DATE NOT NULL,
     interest_paid_to_date DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     next_payout_date DATE NOT NULL,
+    UNIQUE KEY uq_fd_account_no (account_no),
     FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no),
     FOREIGN KEY (fd_plan_id) REFERENCES FD_PLAN(fd_plan_id)
 );
