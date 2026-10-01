@@ -150,12 +150,7 @@ function CustomerFDContent() {
   const linkedParam = searchParams.get("account") ?? "";
 
   const [fds, setFds] = useState<FixedDeposit[]>([]);
-  const [myAccounts, setMyAccounts] = useState<
-    { account_no: string; balance: string }[]
-  >([]);
-  const [eligibleAccounts, setEligibleAccounts] = useState<
-    { account_no: string; balance: string }[]
-  >([]);
+
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -179,24 +174,7 @@ function CustomerFDContent() {
           ? (fdsData || []).filter((fd) => fd.account_no === linkedParam)
           : fdsData || [],
       );
-      setMyAccounts(accountsData || []);
 
-      const fdList = fdsData || [];
-      const eligible = (accountsData || []).filter(
-        (acc) => !fdList.some((fd) => fd.account_no === acc.account_no),
-      );
-
-      setEligibleAccounts(eligible);
-
-      if (eligible.length > 0) {
-        if (linkedParam && eligible.some((a) => a.account_no === linkedParam)) {
-          setAccountNo(linkedParam);
-        } else {
-          setAccountNo(eligible[0].account_no);
-        }
-      } else {
-        setAccountNo("");
-      }
     } catch (e) {
       setFetchError((e as Error).message);
     } finally {

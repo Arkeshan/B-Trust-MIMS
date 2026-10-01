@@ -251,6 +251,12 @@ func ListFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		username, err := getAuthenticatedUser(r, db)
+		if err != nil || username == "" {
+			writeFDError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+
 		rows, err := db.QueryContext(r.Context(), `
 			SELECT fd.fd_acc_no, fd.account_no, fd.fd_plan_id,
 			       plan.interest_rate, plan.term_months, fd.investment,
@@ -259,7 +265,10 @@ func ListFDHandler(db *sql.DB) http.HandlerFunc {
 			       fd.next_payout_date, fd.interest_paid_to_date
 			FROM FIXED_DEPOSIT AS fd
 			JOIN FD_PLAN AS plan ON plan.fd_plan_id = fd.fd_plan_id
-			ORDER BY fd.next_payout_date, fd.fd_acc_no`)
+			JOIN ACCOUNT_HOLDER ah ON ah.account_no = fd.account_no
+			JOIN CUSTOMER c ON c.person_id = ah.person_id
+			WHERE c.username = ?
+			ORDER BY fd.next_payout_date, fd.fd_acc_no`, username)
 		if err != nil {
 			writeFDError(w, http.StatusInternalServerError, "could not fetch fixed deposits")
 			return
