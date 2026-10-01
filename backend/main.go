@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -81,7 +82,6 @@ func main() {
 	}
 
 	http.HandleFunc("/", homePage)
-	//http.Handle("/api/account/", AccountHistoryHandler(db))
 	http.Handle("/api/reports/", ReportsHandler(db))
 
 	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
@@ -93,13 +93,22 @@ func main() {
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
+	http.HandleFunc("/api/auth/logout", enableCORS(LogoutHandler(db)))
 
 	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
 
-	// Customer Portal Routes
-	http.HandleFunc("/api/account/", enableCORS(RecentHistoryHandler(db)))
+	// Customer Portal Routes — dispatch account sub-paths
+	http.HandleFunc("/api/account/", enableCORS(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/history/recent") {
+			RecentHistoryHandler(db)(w, r)
+		} else if strings.HasSuffix(r.URL.Path, "/history") {
+			AccountHistoryHandler(db)(w, r)
+		} else {
+			http.Error(w, "not found", http.StatusNotFound)
+		}
+	}))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
