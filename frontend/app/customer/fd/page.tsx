@@ -159,52 +159,20 @@ function CustomerFDContent() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Form State
-  const [accountNo, setAccountNo] = useState("");
-  const [planId, setPlanId] = useState<number>(2); // Default: 12-Month Plan
-  const [investment, setInvestment] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [formResult, setFormResult] = useState<{
-    ok: boolean;
-    msg: string;
-  } | null>(null);
-
-  // Set account from query param if available
-  useEffect(() => {
-    if (
-      linkedParam &&
-      eligibleAccounts.some((a) => a.account_no === linkedParam)
-    ) {
-      setAccountNo(linkedParam);
-    }
-  }, [linkedParam, eligibleAccounts]);
 
   const loadFDs = useCallback(async () => {
     setLoading(true);
     setFetchError(null);
     try {
       const token = localStorage.getItem("token") || "";
-      const headers = {
-        Authorization: `Bearer ${token}`,
-      };
-
-      const [fdsRes, accountsRes] = await Promise.all([
-        fetch(`/api/fd/list`, {
-          headers,
-          credentials: "include",
-        }),
-        fetch(`/api/customer/accounts`, {
-          headers,
-          credentials: "include",
-        }),
-      ]);
+      const fdsRes = await fetch(`/api/fd/list`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
 
       if (!fdsRes.ok) throw new Error(await fdsRes.text());
-      if (!accountsRes.ok) throw new Error(await accountsRes.text());
 
       const fdsData: FixedDeposit[] = await fdsRes.json();
-      const accountsData: { account_no: string; balance: string }[] =
-        await accountsRes.json();
 
       setFds(
         linkedParam
@@ -240,59 +208,8 @@ function CustomerFDContent() {
     loadFDs();
   }, [loadFDs]);
 
-  async function handleOpenFD(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitting(true);
-    setFormResult(null);
 
-    const inv = parseFloat(investment);
-    if (isNaN(inv) || inv <= 0) {
-      setFormResult({
-        ok: false,
-        msg: "Investment amount must be a positive number.",
-      });
-      setSubmitting(false);
-      return;
-    }
 
-    try {
-      const token = localStorage.getItem("token") || "";
-      const res = await fetch(`/api/fd/open`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          account_no: accountNo.trim(),
-          fd_plan_id: planId,
-          investment: inv,
-        }),
-      });
-
-      const data: { fd_acc_no?: string; message?: string; error?: string } =
-        await res.json();
-
-      if (!res.ok) {
-        setFormResult({
-          ok: false,
-          msg: data.error ?? "Failed to open Fixed Deposit.",
-        });
-      } else {
-        setFormResult({
-          ok: true,
-          msg: `Success! Created Fixed Deposit ${data.fd_acc_no ?? ""}`,
-        });
-        setInvestment("");
-        await loadFDs();
-      }
-    } catch (e) {
-      setFormResult({ ok: false, msg: (e as Error).message });
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   return (
     <main className="min-h-screen bg-[#FFFFFF] text-[#000000] font-sans">
@@ -314,7 +231,7 @@ function CustomerFDContent() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-8 sm:px-10 space-y-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
+        <div className="grid grid-cols-1 gap-8">
           {/* ── Left Column: Active FDs ── */}
           <section className="space-y-4">
             <div className="flex items-center justify-between border-b border-gray-200 pb-3">
@@ -356,126 +273,6 @@ function CustomerFDContent() {
             </div>
           </section>
 
-          {/* ── Right Column: Management Actions ── */}
-          <aside className="space-y-6">
-            {!loading && eligibleAccounts.length === 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-6 shadow-sm">
-                <p className="text-sm font-medium text-[#001F3F] text-center">
-                  All your savings accounts already have a linked fixed deposit.
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-6 shadow-sm">
-                <h3 className="text-base font-bold text-[#001F3F]">
-                  Open a Fixed Deposit
-                </h3>
-                <p className="mt-1 text-xs text-[#6B7280]">
-                  One fixed deposit per savings account. Minimum investment of
-                  LKR 1,000 required.
-                </p>
-
-                <form onSubmit={handleOpenFD} className="mt-5 space-y-4">
-                  <div>
-                    <label
-                      htmlFor="fd-account-no"
-                      className="block text-xs font-semibold uppercase text-[#6B7280]"
-                    >
-                      Linked Savings Account
-                    </label>
-                    <select
-                      id="fd-account-no"
-                      required
-                      value={accountNo}
-                      onChange={(e) => setAccountNo(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2 font-mono text-sm text-[#000000] focus:border-[#06B6D4] outline-none transition"
-                    >
-                      {eligibleAccounts.map((acc) => (
-                        <option key={acc.account_no} value={acc.account_no}>
-                          {acc.account_no}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold uppercase text-[#6B7280] mb-1">
-                      Select Plan Tier
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: 1, label: "6 Mo", rate: "13%" },
-                        { id: 2, label: "1 Yr", rate: "14%" },
-                        { id: 3, label: "3 Yrs", rate: "15%" },
-                      ].map((plan) => (
-                        <button
-                          key={plan.id}
-                          type="button"
-                          onClick={() => setPlanId(plan.id)}
-                          className={`rounded-lg border p-2 text-center transition cursor-pointer ${
-                            planId === plan.id
-                              ? "border-[#06B6D4] bg-white text-[#001F3F] shadow-xs"
-                              : "border-gray-200 bg-transparent text-[#6B7280] hover:bg-white/50"
-                          }`}
-                        >
-                          <p className="text-xs font-bold">{plan.label}</p>
-                          <p className="text-[10px] text-[#06B6D4] font-semibold">
-                            {plan.rate} p.a.
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor="fd-investment"
-                      className="block text-xs font-semibold uppercase text-[#6B7280]"
-                    >
-                      Investment Amount (LKR)
-                    </label>
-                    <input
-                      id="fd-investment"
-                      type="number"
-                      required
-                      min="1000"
-                      step="0.01"
-                      placeholder="50000.00"
-                      value={investment}
-                      onChange={(e) => setInvestment(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm text-[#000000] focus:border-[#06B6D4] outline-none transition"
-                    />
-                  </div>
-
-                  {formResult && (
-                    <div
-                      className={`flex items-start gap-2 rounded-lg p-3 text-xs border ${
-                        formResult.ok
-                          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                          : "border-rose-200 bg-rose-50 text-rose-800"
-                      }`}
-                    >
-                      {formResult.ok ? (
-                        <CheckCircle2 size={16} />
-                      ) : (
-                        <AlertCircle size={16} />
-                      )}
-                      <span>{formResult.msg}</span>
-                    </div>
-                  )}
-
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full rounded-lg bg-[#001F3F] py-2.5 text-xs font-bold text-white transition hover:bg-[#001F3F]/90 disabled:opacity-50 cursor-pointer"
-                  >
-                    {submitting
-                      ? "Opening Account..."
-                      : "Confirm & Open Deposit"}
-                  </button>
-                </form>
-              </div>
-            )}
-          </aside>
         </div>
       </div>
     </main>

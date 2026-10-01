@@ -109,7 +109,6 @@ func main() {
 			http.Error(w, "not found", http.StatusNotFound)
 		}
 	}))
-
 	http.HandleFunc("/api/agent/customer/register", enableCORS(RegisterCustomerHandler(db)))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
