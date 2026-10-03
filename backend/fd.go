@@ -12,10 +12,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// ─────────────────────────────────────────────
-// Shared types
-// ─────────────────────────────────────────────
-
 // FDPlan holds the plan details returned alongside an FD.
 type FDPlan struct {
 	FDPlanID     int             `json:"fd_plan_id"`
@@ -34,10 +30,6 @@ type FixedDeposit struct {
 	NextPayoutDate    time.Time       `json:"next_payout_date"`
 	InterestPaidSoFar decimal.Decimal `json:"interest_paid_so_far"`
 }
-
-// ─────────────────────────────────────────────
-// POST /api/fd/open
-// ─────────────────────────────────────────────
 
 // OpenFDRequest is the JSON body expected by the open-FD endpoint.
 type OpenFDRequest struct {
@@ -66,7 +58,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 1. Parse request body ────────────────────────────────────────
+		//  Parse request body
 		var req OpenFDRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			writeFDError(w, http.StatusBadRequest, "invalid JSON body")
@@ -85,7 +77,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 2. Verify the savings account exists and is active ───────────
+		//  Verify the savings account exists and is active
 		var accountStatus string
 		err := db.QueryRowContext(r.Context(),
 			`SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ?`,
@@ -104,7 +96,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 3. Enforce one-FD-per-account rule ──────────────────────────
+		//3. Enforce one-FD-per-account rule ─
 
 		var existingFDCount int
 		if err := db.QueryRowContext(r.Context(),
@@ -120,7 +112,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 4. Verify the FD plan exists ─────────────────────────────────
+		//  Verify the FD plan exists
 		var termMonths int
 		if err := db.QueryRowContext(r.Context(),
 			`SELECT term_months FROM FD_PLAN WHERE fd_plan_id = ?`,
@@ -133,7 +125,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 5. Reserve the investment and create the FD atomically ───────
+		//  Reserve the investment and create the FD atomically
 		tx, err := db.BeginTx(r.Context(), nil)
 		if err != nil {
 			writeFDError(w, http.StatusInternalServerError, "could not start FD transaction")
@@ -145,10 +137,9 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 
 		var balance, minimumBalance decimal.Decimal
 		err = tx.QueryRowContext(r.Context(), `
-			SELECT sa.balance, ap.min_balance
-			FROM SAVINGS_ACCOUNT AS sa
-			JOIN ACCOUNT_PLAN AS ap ON ap.plan_id = sa.plan_id
-			WHERE sa.account_no = ?
+			SELECT balance, min_balance
+			FROM SAVINGS_ACCOUNT JOIN ACCOUNT_PLAN ON ACCOUNT_PLAN.plan_id = SAVINGS_ACCOUNT.plan_id
+			WHERE account_no = ?
 			FOR UPDATE`, req.AccountNo).Scan(&balance, &minimumBalance)
 		if err != nil {
 			rollback()
@@ -158,10 +149,10 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 		if balance.Sub(req.Investment).LessThan(minimumBalance) {
 			rollback()
 			writeFDError(w, http.StatusUnprocessableEntity,
-				"insufficient funds or savings account minimum balance would be breached")
+				"insufficient funds")
 			return
 		}
-
+		// constraint one saving account only has one fd account
 		var lockedFDCount int
 		if err := tx.QueryRowContext(r.Context(),
 			`SELECT COUNT(*) FROM FIXED_DEPOSIT WHERE account_no = ?`,
@@ -188,7 +179,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 6. Generate FD account number and compute dates ──────────────
+		// Generate FD account number and compute dates
 		today := time.Now().UTC().Truncate(24 * time.Hour)
 		nextPayout := today.AddDate(0, 0, 30)
 
@@ -204,7 +195,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 		}
 		fdAccNo := fmt.Sprintf("FD%09d", nextSeq)
 
-		// ── 7. Insert the Fixed Deposit ───────────────────────────────────
+		// Insert the Fixed Deposit
 		_, err = tx.ExecContext(r.Context(), `
 			INSERT INTO FIXED_DEPOSIT
 				(fd_acc_no, account_no, fd_plan_id, investment,
@@ -228,7 +219,7 @@ func OpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// ── 8. Respond ────────────────────────────────────────────────────
+		// Respond
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		_ = json.NewEncoder(w).Encode(OpenFDResponse{
@@ -305,10 +296,6 @@ func ListFDHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// ─────────────────────────────────────────────
-// POST /api/cron/interest
-// ─────────────────────────────────────────────
-
 // CronInterestResponse is returned after the interest run completes.
 type CronInterestResponse struct {
 	FDsProcessed int       `json:"fds_processed"`
@@ -317,9 +304,7 @@ type CronInterestResponse struct {
 	Message      string    `json:"message"`
 }
 
-// CronInterestHandler handles POST /api/cron/interest.
 // It calls the MySQL stored procedure ProcessFDInterest() and returns the summary.
-// In production this endpoint should be protected by a secret header or IP allowlist.
 func CronInterestHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -327,7 +312,7 @@ func CronInterestHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Call the stored procedure — returns one result set row
+		// Call the stored procedure
 		rows, err := db.QueryContext(r.Context(), `CALL ProcessFDInterest()`)
 		if err != nil {
 			writeFDError(w, http.StatusInternalServerError,
@@ -383,7 +368,7 @@ type FDStatus struct {
 	InterestRate          decimal.Decimal `json:"interest_rate"`
 	TermMonths            int             `json:"term_months"`
 	InterestPaidToDate    decimal.Decimal `json:"interest_paid_to_date"`
-	CurrentEarnedInterest decimal.Decimal `json:"current_interest"`
+	CurrentEarnedInterest decimal.Decimal `json:"current_earned_interest"`
 	NextPayoutDate        time.Time       `json:"next_payout_date"`
 }
 
