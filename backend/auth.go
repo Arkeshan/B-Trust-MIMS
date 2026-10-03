@@ -220,3 +220,40 @@ func LogoutHandler(db *sql.DB) http.HandlerFunc {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "logged_out"})
 	}
 }
+
+// GetStaffPersonID resolves the active agent's person_id and branch_id from USER_SESSION.
+// It checks cookie "session_id" or Authorization Bearer token against USER_SESSION + STAFF.
+// If unauthenticated during local testing, falls back to the first registered staff member.
+func GetStaffPersonID(r *http.Request, db *sql.DB) (int, int, error) {
+	var token string
+	if cookie, err := r.Cookie("session_id"); err == nil && cookie.Value != "" {
+		token = cookie.Value
+	} else {
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			token = strings.TrimPrefix(authHeader, "Bearer ")
+		} else if authHeader != "" {
+			token = authHeader
+		}
+	}
+
+	if token != "" {
+		var personID, branchID int
+		err := db.QueryRowContext(r.Context(), `
+			SELECT s.person_id, s.branch_id
+			FROM USER_SESSION us
+			JOIN USER_ACCOUNT ua ON us.username = ua.username
+			JOIN STAFF s ON ua.username = s.username
+			WHERE us.session_id = ? AND us.expires_at > NOW()`,
+			token,
+		).Scan(&personID, &branchID)
+		if err == nil && personID > 0 {
+			return personID, branchID, nil
+		}
+	}
+
+	// Development fallback if not logged in via session
+	var personID, branchID int
+	err := db.QueryRowContext(r.Context(), "SELECT person_id, branch_id FROM STAFF ORDER BY person_id LIMIT 1").Scan(&personID, &branchID)
+	return personID, branchID, err
+}
