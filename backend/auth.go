@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
@@ -30,51 +31,7 @@ type LoginResponse struct {
 	Role      string `json:"role"`
 }
 
-// $$$ Session Token Generator $$$
-// Produces a 64-character cryptographically random unguessable token.
-func generateSessionToken() string {
-	bytes := make([]byte, 32)
-	_, _ = rand.Read(bytes)
-	return hex.EncodeToString(bytes)
-}
-
-// $$$ Authenticated User Resolver $$$
-// Resolves session_id from Cookie or Authorization header against MySQL USER_SESSION.
-// Falls back gracefully for development testing.
-func getAuthenticatedUser(r *http.Request, db *sql.DB) (string, error) {
-	// $$$ 1. Read Token from Header or Cookie $$$
-	var token string
-	authHeader := r.Header.Get("Authorization")
-	if strings.HasPrefix(authHeader, "Bearer ") {
-		token = strings.TrimPrefix(authHeader, "Bearer ")
-	} else if authHeader != "" {
-		token = authHeader
-	} else if cookie, err := r.Cookie("session_id"); err == nil {
-		token = cookie.Value
-	}
-
-	// Verify token against MySQL USER_SESSION
-	if token != "" {
-		var username string
-		err := db.QueryRowContext(r.Context(),
-			"SELECT username FROM USER_SESSION WHERE session_id = ? AND expires_at > NOW()",
-			token,
-		).Scan(&username)
-		if err == nil && username != "" {
-			return username, nil
-		}
-	}
-
-	// $$$ 2. Development Testing Fallbacks $$$
-	urlUser := strings.TrimSpace(r.URL.Query().Get("username"))
-	if urlUser != "" {
-		return urlUser, nil
-	}
-
-	return "cust_1", nil
-}
-
-// $$$ User Login Handler $$$
+// $$$Session Token Generator$$$ // Produces a 64-character cryptographically random unguessable token. func generateSessionToken() string { 	bytes := make([]byte, 32) 	_, _ = rand.Read(bytes) 	return hex.EncodeToString(bytes) }  // $$$Authenticated User Resolver$$$ // Resolves session_id from Cookie or Authorization header against MySQL USER_SESSION. // Falls back gracefully for development testing. func getAuthenticatedUser(r *http.Request, db *sql.DB) (string, error) { 	// $$$1. Read Token from Header or Cookie$$$ 	var token string 	authHeader := r.Header.Get("Authorization") 	if strings.HasPrefix(authHeader, "Bearer ") { 		token = strings.TrimPrefix(authHeader, "Bearer ") 	} else if authHeader != "" { 		token = authHeader 	} else if cookie, err := r.Cookie("session_id"); err == nil { 		token = cookie.Value 	}  	// Verify token against MySQL USER_SESSION 	if token != "" { 		var username string 		err := db.QueryRowContext(r.Context(), 			"SELECT username FROM USER_SESSION WHERE session_id = ? AND expires_at > NOW()", 			token, 		).Scan(&username) 		if err == nil && username != "" { 			return username, nil 		} 	}  	// $$$2. Development Testing Fallbacks$$$ 	urlUser := strings.TrimSpace(r.URL.Query().Get("username")) 	if urlUser != "" { 		return urlUser, nil 	}  	return "cust_1", nil }  // $$$User Login Handler$$$
 // Authenticates credentials and issues an active record in USER_SESSION.
 func LoginHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -219,4 +176,47 @@ func LogoutHandler(db *sql.DB) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "logged_out"})
 	}
+}
+
+// GetStaffPersonID reads the session_id cookie or Bearer token, queries the database, 
+// and returns the unique integer person_id of the logged-in agent.
+func GetStaffPersonID(r *http.Request, db *sql.DB) (int, error) {
+	var sessionID string
+
+	// Try extracting from an HTTP Cookie first
+	cookie, err := r.Cookie("session_id")
+	if err == nil {
+		sessionID = cookie.Value
+	} else {
+		// Fallback to extracting from Authorization Bearer token
+		authHeader := r.Header.Get("Authorization")
+		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
+			sessionID = authHeader[7:]
+		}
+	}
+
+	if sessionID == "" {
+		return 0, errors.New("unauthorized: missing session token")
+	}
+
+	// Execute your exact SQL query
+	query := `
+		SELECT s.person_id 
+		FROM USER_SESSION us 
+		JOIN USER_ACCOUNT ua ON us.username = ua.username 
+		JOIN STAFF s ON ua.username = s.username 
+		WHERE us.session_id = ? AND us.expires_at > NOW()
+	`
+	
+	var personID int
+	err = db.QueryRow(query, sessionID).Scan(&personID)
+	
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, errors.New("unauthorized: invalid or expired session")
+		}
+		return 0, err
+	}
+
+	return personID, nil
 }
