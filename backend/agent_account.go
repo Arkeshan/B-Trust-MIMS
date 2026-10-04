@@ -438,13 +438,19 @@ func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// 4. Resolve Active Staff & Branch
-		staffPersonID, branchID, err := GetStaffPersonID(r, db)
+		staffPersonID, err := GetStaffPersonID(r, db)
 		if err != nil {
 			log.Printf("Failed to resolve staff person ID: %v\n", err)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			json.NewEncoder(w).Encode(ErrorResponse{Error: "Could not identify active staff member."})
 			return
+		}
+
+		branchID, err := GetStaffBranchID(staffPersonID, db)
+		if err != nil {
+			log.Printf("Failed to resolve branch ID for staff %d: %v\n", staffPersonID, err)
+			branchID = 1 // Fallback to primary branch if not mapped
 		}
 
 		// 5. ACID Database Transaction

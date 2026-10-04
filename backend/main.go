@@ -14,10 +14,14 @@ import (
 )
 
 func homePage(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path !="/"{
+		http.NotFound(w, r)
+		return
+	}
 	fmt.Fprintf(w, "B-Trust Backend is running!")
 }
 
-func enableCORS(next http.HandlerFunc) http.HandlerFunc {
+func enableCORS(next http.HandlerFunc) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
@@ -92,6 +96,7 @@ func main() {
 
 	http.HandleFunc("/api/txn/deposit", enableCORS(ProcessTransaction(db, "deposit")))
 	http.HandleFunc("/api/txn/withdraw", enableCORS(ProcessTransaction(db, "withdrawal")))
+	http.HandleFunc("/api/agent/lookup", enableCORS(AgentCustomerLookupHandler(db)))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
 	http.HandleFunc("/api/auth/logout", enableCORS(LogoutHandler(db)))
 
