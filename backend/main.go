@@ -97,8 +97,8 @@ func main() {
 	http.HandleFunc("/", homePage)
 	http.Handle("/api/reports/", ReportsHandler(db))
 
-	http.HandleFunc("/api/fd/open", enableCORS(OpenFDHandler(db)))
-	http.HandleFunc("/api/fd/new", enableCORS(OpenFDHandler(db)))
+	http.HandleFunc("/api/fd/open", enableCORS(AgentOpenFDHandler(db)))
+	http.HandleFunc("/api/fd/new", enableCORS(AgentOpenFDHandler(db)))
 	http.HandleFunc("/api/fd/list", enableCORS(ListFDHandler(db)))
 	http.HandleFunc("/api/fd/status/", enableCORS(FDStatusHandler(db)))
 	http.HandleFunc("/api/cron/interest", enableCORS(CronInterestHandler(db)))
@@ -125,8 +125,11 @@ func main() {
 	}))
 	http.HandleFunc("/api/agent/customer/register", enableCORS(RegisterCustomerHandler(db)))
 	http.HandleFunc("/api/agent/plans", enableCORS(ListAccountPlansHandler(db)))
-	http.HandleFunc("/api/agent/customer/search", enableCORS(SearchCustomerByNICHandler(db)))
 	http.HandleFunc("/api/agent/account/open", enableCORS(OpenAccountHandler(db)))
+	http.HandleFunc("/api/agent/customer/search", enableCORS(AgentCustomerSearchHandler(db)))
+	http.HandleFunc("/api/agent/stats", enableCORS(AgentStatsHandler(db)))
+	http.HandleFunc("/api/agent/customers", enableCORS(AgentCustomersHandler(db)))
+	http.HandleFunc("/api/agent/ledger", enableCORS(AgentLedgerHandler(db)))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
