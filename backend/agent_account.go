@@ -9,14 +9,16 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 // AccountPlan represents a savings account tier from ACCOUNT_PLAN.
 type AccountPlan struct {
-	PlanID       int     `json:"plan_id"`
-	PlanName     string  `json:"plan_name"`
-	InterestRate float64 `json:"interest_rate"`
-	MinBalance   float64 `json:"min_balance"`
+	PlanID       int             `json:"plan_id"`
+	PlanName     string          `json:"plan_name"`
+	InterestRate decimal.Decimal `json:"interest_rate"`
+	MinBalance   decimal.Decimal `json:"min_balance"`
 }
 
 // CustomerSearchResult represents a customer found via NIC or Guardian NIC.
@@ -33,19 +35,19 @@ type CustomerSearchResult struct {
 
 // OpenAccountRequest is the payload sent from the frontend to open an account.
 type OpenAccountRequest struct {
-	PlanID         int     `json:"plan_id"`
-	PersonIDs      []int   `json:"person_ids"`
-	InitialDeposit float64 `json:"initial_deposit"`
+	PlanID         int             `json:"plan_id"`
+	PersonIDs      []int           `json:"person_ids"`
+	InitialDeposit decimal.Decimal `json:"initial_deposit"`
 }
 
 // OpenAccountResponse is the response sent after successful account origination.
 type OpenAccountResponse struct {
-	Status       string  `json:"status"`
-	Message      string  `json:"message"`
-	AccountNo    string  `json:"account_no"`
-	Balance      float64 `json:"balance"`
-	PlanName     string  `json:"plan_name"`
-	HoldersCount int     `json:"holders_count"`
+	Status       string          `json:"status"`
+	Message      string          `json:"message"`
+	AccountNo    string          `json:"account_no"`
+	Balance      decimal.Decimal `json:"balance"`
+	PlanName     string          `json:"plan_name"`
+	HoldersCount int             `json:"holders_count"`
 }
 
 // ListAccountPlansHandler returns all active savings plans with interest and minimum balance requirements.
@@ -227,7 +229,7 @@ func generateAccountNo(tx *sql.Tx, ctx context.Context) (string, error) {
 }
 
 // OpenAccountHandler handles Phase 2 Account Origination:
-// Validates plan rules, performs strict DOB age checks, verifies minimum balance,
+// Validates plan rules, performs strict DOB age checks, verifies minimum balance using decimal.Decimal,
 // creates the SAVINGS_ACCOUNT, maps ACCOUNT_HOLDER rows, and deposits the initial funds
 // into TRANSACTION (which fires the before_transaction_insert trigger).
 // POST /api/agent/account/open
@@ -270,7 +272,7 @@ func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
 			json.NewEncoder(w).Encode(ErrorResponse{Error: "At least one customer must be selected as an account holder."})
 			return
 		}
-		if req.InitialDeposit < 0 {
+		if req.InitialDeposit.IsNegative() {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ErrorResponse{Error: "Initial deposit cannot be negative."})
@@ -291,7 +293,7 @@ func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
 
 		// 2. Fetch Plan Details (Name & Minimum Balance)
 		var planName string
-		var minBalance float64
+		var minBalance decimal.Decimal
 		err := db.QueryRowContext(r.Context(),
 			"SELECT plan_name, min_balance FROM ACCOUNT_PLAN WHERE plan_id = ?",
 			req.PlanID,
@@ -303,12 +305,13 @@ func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Verify Initial Deposit meets plan minimum balance
-		if req.InitialDeposit < minBalance {
+		// Verify Initial Deposit meets plan minimum balance using exact Decimal comparison
+		if req.InitialDeposit.LessThan(minBalance) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(ErrorResponse{
-				Error: fmt.Sprintf("Initial deposit of LKR %.2f is less than the required minimum balance of LKR %.2f for the %s plan.", req.InitialDeposit, minBalance, planName),
+				Error: fmt.Sprintf("Initial deposit of LKR %s is less than the required minimum balance of LKR %s for the %s plan.",
+					req.InitialDeposit.StringFixed(2), minBalance.StringFixed(2), planName),
 			})
 			return
 		}
@@ -495,14 +498,14 @@ func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
-		// Step D: Insert Initial Deposit into TRANSACTION table
+		// Step D: Insert Initial Deposit into TRANSACTION table using exact Decimal string
 		// The MySQL 'before_transaction_insert' trigger catches this,
 		// sets NEW.balance_after = current_balance + amount, and updates SAVINGS_ACCOUNT.balance!
 		refNo := fmt.Sprintf("INIT-%s", accountNo)
 		_, err = tx.ExecContext(r.Context(), `
 			INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks)
 			VALUES (?, ?, 'deposit', ?, 0.00, ?, 'Initial deposit on account opening')`,
-			accountNo, staffPersonID, req.InitialDeposit, refNo,
+			accountNo, staffPersonID, req.InitialDeposit.StringFixed(2), refNo,
 		)
 		if err != nil {
 			log.Printf("Failed to insert initial deposit TRANSACTION: %v\n", err)
@@ -513,7 +516,7 @@ func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Step E: Fetch the updated balance directly from SAVINGS_ACCOUNT to verify trigger execution
-		var finalBalance float64
+		var finalBalance decimal.Decimal
 		err = tx.QueryRowContext(r.Context(),
 			"SELECT balance FROM SAVINGS_ACCOUNT WHERE account_no = ?", accountNo,
 		).Scan(&finalBalance)

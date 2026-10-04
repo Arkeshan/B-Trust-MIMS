@@ -12,6 +12,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"github.com/shopspring/decimal"
 )
 
 func getTestDB(t *testing.T) *sql.DB {
@@ -67,6 +68,13 @@ func TestListAccountPlansHandler(t *testing.T) {
 	if len(plans) != 5 {
 		t.Fatalf("Expected 5 plans, got %d", len(plans))
 	}
+
+	// Verify that min_balance and interest_rate deserialize as decimal.Decimal properly
+	for _, p := range plans {
+		if p.InterestRate.IsZero() && p.PlanName != "Children" {
+			t.Errorf("Plan %s interest rate should not be zero", p.PlanName)
+		}
+	}
 }
 
 func TestSearchCustomerByNIC_GuardianAware(t *testing.T) {
@@ -121,7 +129,7 @@ func TestOpenAccount_AgeValidation_ChildrenPlanForAdultRejected(t *testing.T) {
 	payload := OpenAccountRequest{
 		PlanID:         1,
 		PersonIDs:      []int{6},
-		InitialDeposit: 1000,
+		InitialDeposit: decimal.NewFromInt(1000),
 	}
 	body, _ := json.Marshal(payload)
 	req := httptest.NewRequest("POST", "/api/agent/account/open", bytes.NewReader(body))
@@ -143,7 +151,7 @@ func TestOpenAccount_Joint_RequiresMultipleHolders(t *testing.T) {
 	payload := OpenAccountRequest{
 		PlanID:         5,
 		PersonIDs:      []int{6},
-		InitialDeposit: 6000,
+		InitialDeposit: decimal.NewFromInt(6000),
 	}
 	body, _ := json.Marshal(payload)
 	req := httptest.NewRequest("POST", "/api/agent/account/open", bytes.NewReader(body))
@@ -165,7 +173,7 @@ func TestOpenAccount_InsufficientDepositRejected(t *testing.T) {
 	payload := OpenAccountRequest{
 		PlanID:         3,
 		PersonIDs:      []int{6},
-		InitialDeposit: 500,
+		InitialDeposit: decimal.NewFromInt(500),
 	}
 	body, _ := json.Marshal(payload)
 	req := httptest.NewRequest("POST", "/api/agent/account/open", bytes.NewReader(body))
