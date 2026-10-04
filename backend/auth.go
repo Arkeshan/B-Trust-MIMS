@@ -62,7 +62,8 @@ func getAuthenticatedUser(r *http.Request, db *sql.DB) (string, error) {
 		}
 	}
 
-	urlUser := strings.TrimSpace(r.URL.Query().Get("username"))
+	// $$$ 2. Development Testing Fallbacks $$$
+	urlUser := strings.TrimSpace(r.URL.Query().Get("test_user"))
 	if urlUser != "" {
 		return urlUser, nil
 	}

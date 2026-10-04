@@ -11,8 +11,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
           <Link href="/agent/dashboard" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Dashboard</Link>
           <Link href="/agent/customers/new" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Register Customer</Link>
           <Link href="/agent/accounts/new" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Open Account</Link>
+          <Link href="/agent/fd/new" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Open FD</Link>
           <Link href="/agent/transfer" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Teller Counter</Link>
           <Link href="/agent/portfolio" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Portfolio</Link>
+          <Link href="/admin/reports" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Admin Reports</Link>
         </nav>
       </aside>
       
