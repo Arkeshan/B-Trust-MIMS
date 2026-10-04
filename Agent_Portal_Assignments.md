@@ -132,7 +132,7 @@ This document provides a **highly detailed, step-by-step technical breakdown** f
 **Purpose:** Provide reporting and oversight so the agent can see their assigned customers and reconcile their physical cash drawer. Additionally, take ownership of Fixed Deposit (FD) origination, as customers are no longer permitted to create FDs on their own according to the SRS.
 
 ### 🌐 Frontend Tasks
-- **[EDIT] `frontend/app/customer/fd/page.tsx` & `frontend/app/customer/savings/page.tsx`**
+- **[EDIT] `frontend/app/customer/fd/page.tsx` & `frontend/app/customer/savings/page.tsx` [COMPLETED]**
   - *Steps:* Completely REMOVE the "Create FD" forms, modals, and buttons from the customer portal. 
   - *Purpose:* Fulfills the strict SRS requirement that customers can only *view* existing FDs, not originate them.
 - **[CREATE] `frontend/app/agent/fd/new/page.tsx`**

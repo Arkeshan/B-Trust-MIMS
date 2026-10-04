@@ -10,6 +10,9 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
+  ShieldAlert,
+  X,
+  PlusCircle,
 } from "lucide-react";
 import ActiveFD from "./components/ActiveFD";
 
@@ -44,6 +47,7 @@ function CustomerFDContent() {
 
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [showAgentNotice, setShowAgentNotice] = useState(false);
 
 
   const loadFDs = useCallback(async () => {
@@ -107,6 +111,14 @@ function CustomerFDContent() {
               <h2 className="text-base font-bold text-[#001F3F] uppercase tracking-wider">
                 Active Term Investments
               </h2>
+              <button
+                type="button"
+                onClick={() => setShowAgentNotice(true)}
+                className="flex items-center gap-1.5 rounded-lg bg-[#001F3F] px-3.5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#001F3F]/90 transition"
+              >
+                <PlusCircle size={15} />
+                <span>Open New Fixed Deposit</span>
+              </button>
             </div>
 
             {loading && (
@@ -123,15 +135,21 @@ function CustomerFDContent() {
             )}
 
             {!loading && !fetchError && fds.length === 0 && (
-              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-[#F3F4F6] py-16 text-center">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-[#F3F4F6] py-16 text-center px-4">
                 <PiggyBank size={36} className="text-[#6B7280] mb-2" />
                 <p className="font-semibold text-[#000000]">
                   No Fixed Deposits Found
                 </p>
-                <p className="text-xs text-[#6B7280] mt-0.5">
-                  Open a term deposit using the panel on the right to start
-                  earning monthly returns.
+                <p className="text-xs text-[#6B7280] mt-1 max-w-md">
+                  Fixed Deposits are opened exclusively by authorized bank agents. Please contact your assigned agent or visit your nearest B-Trust branch to open a term deposit.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setShowAgentNotice(true)}
+                  className="mt-4 rounded-lg bg-[#001F3F] px-4 py-2 text-xs font-semibold text-white hover:bg-[#001F3F]/90 transition"
+                >
+                  How to Open an FD
+                </button>
               </div>
             )}
 
@@ -144,6 +162,44 @@ function CustomerFDContent() {
 
         </div>
       </div>
+
+      {/* Fixed Deposit Agent Notice Modal */}
+      {showAgentNotice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl border border-gray-200">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <div className="flex items-center gap-2 text-[#001F3F]">
+                <ShieldAlert className="text-[#06B6D4]" size={20} />
+                <h3 className="text-base font-bold">Fixed Deposit Origination</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAgentNotice(false)}
+                className="text-gray-400 hover:text-black transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="mt-4 space-y-3 text-sm text-[#4B5563]">
+              <p>
+                In accordance with B-Trust banking policies, Fixed Deposits must be opened by an authorized bank agent.
+              </p>
+              <div className="rounded-lg bg-[#F3F4F6] p-3 text-xs text-[#001F3F] border border-gray-200">
+                Please contact your assigned agent or visit your nearest B-Trust branch to open a new Fixed Deposit.
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowAgentNotice(false)}
+                className="rounded-lg bg-[#001F3F] px-4 py-2 text-xs font-semibold text-white hover:bg-[#001F3F]/90 transition"
+              >
+                Understood
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

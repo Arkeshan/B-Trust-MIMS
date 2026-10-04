@@ -1,0 +1,50 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: btrust_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-ArkeSabay@2k4}
+      MYSQL_DATABASE: btrust
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./database/triggers.sql:/docker-entrypoint-initdb.d/2-triggers.sql
+      - ./database/views.sql:/docker-entrypoint-initdb.d/3-views.sql
+      - ./database/procedures.sql:/docker-entrypoint-initdb.d/4-procedures.sql
+      - ./database/seed_auth.sql:/docker-entrypoint-initdb.d/5-seed_auth.sql
+      - ./database/seed_accounts.sql:/docker-entrypoint-initdb.d/6-seed_accounts.sql
+      - db_data:/var/lib/mysql
+    # Let MySQL initialize natively; the seed files will run automatically if db is empty.
+
+  backend:
+    build:
+      context: ./backend
+    container_name: btrust_backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_USER=root
+      - DB_PASSWORD=${DB_ROOT_PASSWORD:-ArkeSabay@2k4}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=btrust
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: btrust_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8080
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

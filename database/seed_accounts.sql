@@ -91,3 +91,7 @@ INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_
     ('ACC000000006', 1, 'deposit', 20000.00, 70000.00),
     ('ACC000000006', 4, 'withdrawal', 5000.00, 65000.00),
     ('ACC000000008', 1, 'interest', 200.00, 2200.00);
+
+-- 7. Fixed Deposit Sample
+INSERT INTO FIXED_DEPOSIT (fd_acc_no, account_no, fd_plan_id, investment, start_date, interest_paid_to_date, next_payout_date) VALUES
+    ('FD000000001', 'ACC000000001', 1, 1000.00, '2026-09-16', 0.00, '2026-10-16');

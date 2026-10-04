@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -36,9 +37,8 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc{
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file: ", err)
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using environment variables")
 	}
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -66,7 +66,16 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := db.Ping(); err != nil {
+	// Retry connecting to DB (useful when containerized DB is still booting)
+	for i := 0; i < 15; i++ {
+		if err = db.Ping(); err == nil {
+			log.Println("Successfully connected to MySQL database!")
+			break
+		}
+		log.Printf("Waiting for database connection (%d/15)...: %v", i+1, err)
+		time.Sleep(2 * time.Second)
+	}
+	if err != nil {
 		log.Fatal("Error pinging database: ", err)
 	}
 
