@@ -20,6 +20,8 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
   3-row transfer form: recipient account lookup with masked name, balance check, transfer receipt with reference code.
 - `/agent/transfer` (`app/agent/transfer/page.tsx`) - Arkeshan
   Counter deposit and withdrawal form for bank agents.
+- `/agent/accounts/new` (`app/agent/accounts/new/page.tsx`) - Arkeshan
+  Minimalist 3-row wizard for account origination (plan selection, initial deposit, customer NIC search & association).
 - `/admin/reports` (`app/admin/reports/page.tsx`) - Sathika, Arkeshan
   5 management reports tabs (Agent Summary, Account Summary, Active FDs, Monthly Interest, Customer Activity).
 

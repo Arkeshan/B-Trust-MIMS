@@ -20,10 +20,19 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 - GET /api/fd/status/{id} - Get status of a fixed deposit (Dinisuru)
 - POST /api/cron/interest - Manually run the interest payout procedure (Dinisuru)
 - GET /api/reports/{type} - Get report data (agents, accounts, fds, monthly-interest, customers) (Sathika)
+- GET /api/agent/plans - List savings account plans (Arkeshan)
+- GET /api/agent/lookup?nic= - Lookup customer by NIC (guardian-aware) (Arkeshan)
+- POST /api/agent/account/open - Open a new savings account with atomic transaction (Arkeshan)
 - GET /api/account/{id}/history - Full transaction history with pagination (Nimthara, Arkeshan)
 - GET /api/account/{id}/history/recent - Last 7 days transactions (Achira)
 
 ## Files and Functions
+
+### agent_account.go (Arkeshan)
+- ListAccountPlansHandler: returns all plan tiers
+- SearchCustomerByNICHandler: guardian-aware NIC search using UNION query
+- OpenAccountHandler: creates savings account, links holders, processes initial deposit atomically
+- generateAccountNo: random 12-char account generator
 
 ### account.go (Arkeshan, Nimthara)
 - CustomerAccountsHandler: returns accounts belonging to authenticated customer
