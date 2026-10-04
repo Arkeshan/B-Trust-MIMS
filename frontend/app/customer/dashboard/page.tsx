@@ -54,7 +54,7 @@ export default function CustomerDashboard() {
       </header>
 
       <div className="mx-auto max-w-7xl px-6 py-10 sm:px-10">
-        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <Link
             href="/customer/savings"
             className="group relative flex min-h-[220px] items-center justify-center rounded-xl border border-gray-200 bg-[#F3F4F6] p-7 text-center shadow-sm transition-all hover:border-[#06B6D4] hover:shadow-md cursor-pointer"
@@ -91,19 +91,6 @@ export default function CustomerDashboard() {
             />
             <h2 className="text-2xl font-bold leading-tight text-[#001F3F]">
               Transfer Services
-            </h2>
-          </Link>
-
-          <Link
-            href="/customer/settings"
-            className="group relative flex min-h-[220px] items-center justify-center rounded-xl border border-gray-200 bg-[#F3F4F6] p-7 text-center shadow-sm transition-all hover:border-[#06B6D4] hover:shadow-md cursor-pointer"
-          >
-            <ArrowUpRight
-              size={20}
-              className="absolute right-6 top-6 text-[#6B7280] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#06B6D4]"
-            />
-            <h2 className="text-2xl font-bold leading-tight text-[#001F3F]">
-              Settings
             </h2>
           </Link>
         </section>
