@@ -14,10 +14,10 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
           <Link href="/agent/fd/new" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Open FD</Link>
           <Link href="/agent/transfer" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Teller Counter</Link>
           <Link href="/agent/portfolio" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Portfolio</Link>
-          <Link href="/admin/reports" className="block px-4 py-2 rounded hover:bg-blue-800 transition-colors">Admin Reports</Link>
+
         </nav>
       </aside>
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <AgentHeader />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
