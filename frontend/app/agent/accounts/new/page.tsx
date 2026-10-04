@@ -256,7 +256,7 @@ export default function OpenSavingsAccountPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] text-[#000000] py-12 px-4 sm:px-6 lg:px-8 font-sans">
+    <div className="text-[#000000] font-sans pb-12">
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Brand Header */}
         <div className="flex items-center gap-3">
