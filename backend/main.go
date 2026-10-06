@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,16 +23,51 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "B-Trust Backend is running!")
 }
 
-func enableCORS(next http.HandlerFunc) http.HandlerFunc{
+func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		origin := r.Header.Get("Origin")
+		allowedOrigins := map[string]bool{
+			"http://localhost:3000": true,
+			"http://127.0.0.1:3000": true,
+			"http://frontend:3000":  true,
+		}
+		if allowedOrigins[origin] || (os.Getenv("ENV") != "production" && origin != "") {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		} else if origin == "" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
+		next(w, r)
+	}
+}
+
+func requireAdmin(db *sql.DB, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		username, err := getAuthenticatedUser(r, db)
+		if err != nil || username == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized: valid session required"})
+			return
+		}
+
+		var role string
+		err = db.QueryRowContext(r.Context(), "SELECT type FROM USER_ACCOUNT WHERE username = ?", username).Scan(&role)
+		if err != nil || strings.ToLower(role) != "admin" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "Forbidden: admin access required"})
+			return
+		}
+
 		next(w, r)
 	}
 }
@@ -94,8 +130,36 @@ func main() {
 		log.Println("Warning: Could not seed test user:", err)
 	}
 
+	adminEmail := os.Getenv("ADMIN_EMAIL")
+	if adminEmail == "" {
+		adminEmail = "arkesuje@gmail.com"
+	}
+	adminInitialPassword := os.Getenv("ADMIN_INITIAL_PASSWORD")
+	if adminInitialPassword != "" {
+		adminPwd, err := bcrypt.GenerateFromPassword([]byte(adminInitialPassword), bcrypt.DefaultCost)
+		if err == nil {
+			_, err = db.Exec(`
+				INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
+				VALUES (?, ?, ?, ?, ?)
+				ON DUPLICATE KEY UPDATE
+					password_hash = VALUES(password_hash),
+					email = VALUES(email),
+					type = VALUES(type),
+					status = VALUES(status)`,
+				"admin", string(adminPwd), adminEmail, "admin", "active",
+			)
+			if err != nil {
+				log.Println("Warning: Could not seed admin user:", err)
+			} else {
+				log.Printf("Admin account initialized for %s\n", adminEmail)
+			}
+		}
+	} else {
+		log.Println("Notice: ADMIN_INITIAL_PASSWORD not provided in environment; skipping admin bootstrap")
+	}
+
 	http.HandleFunc("/", homePage)
-	http.Handle("/api/reports/", ReportsHandler(db))
+	http.HandleFunc("/api/reports/", enableCORS(requireAdmin(db, ReportsHandler(db))))
 
 	http.HandleFunc("/api/fd/open", enableCORS(AgentOpenFDHandler(db)))
 	http.HandleFunc("/api/fd/new", enableCORS(AgentOpenFDHandler(db)))
@@ -108,6 +172,8 @@ func main() {
 	http.HandleFunc("/api/agent/lookup", enableCORS(AgentCustomerLookupHandler(db)))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
 	http.HandleFunc("/api/auth/logout", enableCORS(LogoutHandler(db)))
+	http.HandleFunc("/api/auth/otp/verify", enableCORS(VerifyOTPHandler(db)))
+	http.HandleFunc("/api/auth/otp/resend", enableCORS(ResendOTPHandler(db)))
 
 	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))

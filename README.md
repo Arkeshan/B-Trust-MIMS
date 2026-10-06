@@ -44,3 +44,9 @@ docker-compose down
 - [x] Agent Portal Module 1: Layout Shell & Navigation
 - [x] Agent Portal Module 3: Account Origination & Association (Adult, Child, Teen, Senior, Joint accounts with decimal transactions)
 - [x] Full Docker Containerization for MySQL, Go Backend, and Next.js Frontend
+
+
+## Recent Updates (October 6, 2026)
+- **Admin Email OTP 2FA, Rate Limiting, and Safe Logout** implemented by **Arkeshan**.
+- Detailed implementation report available in [arkeshan_final_implementation_report.md](./arkeshan_final_implementation_report.md).
+

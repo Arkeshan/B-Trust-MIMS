@@ -25,6 +25,8 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    env_file:
+      - ./backend/.env
     environment:
       - DB_USER=root
       - DB_PASSWORD=${DB_ROOT_PASSWORD:-ArkeSabay@2k4}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 // ==========================================
 // 1. TYPES & CONSTANTS
@@ -26,7 +28,6 @@ const TABS: { id: ReportType; label: string }[] = [
 const currency = new Intl.NumberFormat("en-LK", { style: "currency", currency: "LKR", maximumFractionDigits: 2 });
 const formatDate = (val: string) => (!val || Number.isNaN(new Date(val).getTime()) ? val : new Date(val).toLocaleDateString());
 
-// Updated colors for the Net Change column to look good on a white background
 const COLUMNS: Record<ReportType, { header: string; render: (row: any) => React.ReactNode }[]> = {
   agents: [
     { header: "Agent", render: (r: AgentSummary) => <span className="font-medium text-gray-900">{r.first_name} {r.last_name}</span> },
@@ -35,7 +36,7 @@ const COLUMNS: Record<ReportType, { header: string; render: (row: any) => React.
     { header: "Total Value", render: (r: AgentSummary) => currency.format(r.total_value) },
   ],
   accounts: [
-    { header: "Account No", render: (r: AccountSummary) => <span className="font-medium text-indigo-600">{r.account_no}</span> },
+    { header: "Account No", render: (r: AccountSummary) => <span className="font-semibold text-[#001F3F]">{r.account_no}</span> },
     { header: "Status", render: (r: AccountSummary) => <span className="capitalize px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-medium">{r.status}</span> },
     { header: "Balance", render: (r: AccountSummary) => <span className="font-medium text-gray-900">{currency.format(r.current_balance)}</span> },
     { header: "Transactions", render: (r: AccountSummary) => r.total_transactions },
@@ -44,7 +45,7 @@ const COLUMNS: Record<ReportType, { header: string; render: (row: any) => React.
     { header: "Interest", render: (r: AccountSummary) => currency.format(r.total_interest_credited) },
   ],
   fds: [
-    { header: "FD Account", render: (r: ActiveFd) => <span className="font-medium text-indigo-600">{r.fd_acc_no}</span> },
+    { header: "FD Account", render: (r: ActiveFd) => <span className="font-semibold text-[#001F3F]">{r.fd_acc_no}</span> },
     { header: "Investment", render: (r: ActiveFd) => currency.format(r.investment) },
     { header: "Rate", render: (r: ActiveFd) => `${r.interest_rate}%` },
     { header: "Interest Paid", render: (r: ActiveFd) => currency.format(r.interest_paid_to_date) },
@@ -76,9 +77,9 @@ function TabNavigation({ activeTab, onTabSelect }: { activeTab: ReportType; onTa
         <button
           key={tab.id}
           onClick={() => onTabSelect(tab.id)}
-          className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 ${
+          className={`px-5 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 cursor-pointer ${
             activeTab === tab.id
-              ? "bg-indigo-600 text-white shadow-md"
+              ? "bg-[#001F3F] text-white shadow-sm"
               : "text-gray-500 hover:text-gray-900 hover:bg-gray-50"
           }`}
         >
@@ -95,9 +96,9 @@ function DataTable({ activeTab, rows, loading }: { activeTab: ReportType; rows: 
   return (
     <section className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
       <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-white">
-        <h2 className="text-xl font-bold text-gray-900">{TABS.find((tab) => tab.id === activeTab)?.label}</h2>
+        <h2 className="text-xl font-bold text-[#001F3F]">{TABS.find((tab) => tab.id === activeTab)?.label}</h2>
         {loading && (
-          <div className="flex items-center gap-2 text-sm font-medium text-indigo-600">
+          <div className="flex items-center gap-2 text-sm font-medium text-[#06B6D4]">
             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -142,10 +143,50 @@ function DataTable({ activeTab, rows, loading }: { activeTab: ReportType; rows: 
 // ==========================================
 
 export default function AdminReportsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<ReportType>("agents");
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [adminUser, setAdminUser] = useState("");
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  // Authentication & Role Guard: Ensure session exists and role is admin
+  useEffect(() => {
+    const sessionId = localStorage.getItem("session_id");
+    const role = localStorage.getItem("role");
+    const username = localStorage.getItem("username");
+
+    if (!sessionId || role?.toLowerCase() !== "admin") {
+      router.push("/login");
+      return;
+    }
+    if (username) {
+      setAdminUser(username);
+    }
+  }, [router]);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      const token = localStorage.getItem("session_id") || "";
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error("Logout request error:", err);
+    } finally {
+      localStorage.removeItem("session_id");
+      localStorage.removeItem("username");
+      localStorage.removeItem("role");
+      router.push("/login");
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -156,7 +197,22 @@ export default function AdminReportsPage() {
       setError("");
 
       try {
-        const response = await fetch(`/api/reports/${activeTab}`);
+        const token = typeof window !== "undefined" ? localStorage.getItem("session_id") || "" : "";
+        const response = await fetch(`/api/reports/${activeTab}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        });
+
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem("session_id");
+          localStorage.removeItem("username");
+          localStorage.removeItem("role");
+          router.push("/login");
+          return;
+        }
+
         if (!response.ok) throw new Error(`Failed to load "${activeTab}" report`);
         
         const body: ReportResponse = await response.json();
@@ -173,20 +229,35 @@ export default function AdminReportsPage() {
 
     void loadReport();
     return () => { cancelled = true; };
-  }, [activeTab]);
+  }, [activeTab, router]);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-10 sm:px-10 font-sans">
-      <div className="mx-auto max-w-6xl">
-        
-        <header className="mb-10">
-          <p className="text-sm font-bold uppercase tracking-widest text-indigo-600 mb-2">B-Trust MIMS</p>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">Admin Reports</h1>
-          <p className="mt-2 max-w-2xl text-lg text-gray-500">
-            Live management reports sourced directly from the database views.
-          </p>
-        </header>
+    <main className="min-h-screen bg-[#F9FAFB] text-[#000000] font-sans">
+      <header className="border-b border-gray-200 bg-[#FFFFFF] px-6 py-6 sm:px-10 shadow-sm">
+        <div className="mx-auto max-w-6xl flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span className="block text-2xl font-extrabold uppercase leading-none tracking-[0.12em] text-[#06B6D4]">
+              B-Trust MIMS
+            </span>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#001F3F]">
+              Admin Reports
+            </h1>
+            <p className="mt-1 text-sm text-[#6B7280]">
+              Signed in as <span className="font-semibold text-[#001F3F]">{adminUser || "admin"}</span> (Administrator)
+            </p>
+          </div>
+          <button
+            onClick={handleLogout}
+            disabled={loggingOut}
+            className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-[#001F3F] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 cursor-pointer shadow-sm"
+          >
+            <LogOut size={16} />
+            {loggingOut ? "Signing out..." : "Logout"}
+          </button>
+        </div>
+      </header>
 
+      <div className="mx-auto max-w-6xl px-6 py-8 sm:px-10">
         <TabNavigation activeTab={activeTab} onTabSelect={setActiveTab} />
 
         {error && (
@@ -199,7 +270,6 @@ export default function AdminReportsPage() {
         )}
 
         <DataTable activeTab={activeTab} rows={rows} loading={loading} />
-        
       </div>
     </main>
   );

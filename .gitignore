@@ -1,0 +1,28 @@
+# Environment secrets (Never commit to Git)
+.env
+backend/.env
+frontend/.env
+*.env.local
+
+# Binaries and build artifacts
+backend/*.exe
+*.exe
+btrust-backend
+btrust-backend.exe
+
+# Node & Next.js
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Database data
+db_data/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.gemini/
+
