@@ -100,12 +100,13 @@ export default function NewCustomerPage() {
 
     try {
       const res = await fetch(
-        "http://localhost:8080/api/agent/customer/register",
+        "/api/agent/customer/register",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include",
           body: JSON.stringify({
             first_name: firstName,
             last_name: lastName,

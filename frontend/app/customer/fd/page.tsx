@@ -54,7 +54,7 @@ function CustomerFDContent() {
     setLoading(true);
     setFetchError(null);
     try {
-      const token = localStorage.getItem("token") || "";
+      const token = localStorage.getItem("session_id") || "";
       const fdsRes = await fetch(`/api/fd/list`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",

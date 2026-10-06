@@ -15,7 +15,10 @@ export default function AgentHeader() {
   const handleLogout = async () => {
     try {
       // Hits the logout API endpoint
-      await fetch("http://localhost:8080/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { 
+        method: "POST",
+        credentials: "include" 
+      });
     } catch (err) {
       console.error("Logout failed", err);
     }
