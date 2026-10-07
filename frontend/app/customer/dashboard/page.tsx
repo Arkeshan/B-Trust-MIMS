@@ -63,9 +63,9 @@ export default function CustomerDashboard() {
               size={20}
               className="absolute right-6 top-6 text-[#6B7280] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#06B6D4]"
             />
-            <h2 className="text-2xl font-bold leading-tight text-[#001F3F]">
+            <h4 className="text-2xl font-bold leading-tight text-[#001F3F]">
               Savings Accounts
-            </h2>
+            </h4>
           </Link>
 
           <Link
@@ -76,9 +76,9 @@ export default function CustomerDashboard() {
               size={20}
               className="absolute right-6 top-6 text-[#6B7280] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#06B6D4]"
             />
-            <h2 className="text-2xl font-bold leading-tight text-[#001F3F]">
+            <h4 className="text-2xl font-bold leading-tight text-[#001F3F]">
               Fixed Deposit Accounts
-            </h2>
+            </h4>
           </Link>
 
           <Link
@@ -89,9 +89,22 @@ export default function CustomerDashboard() {
               size={20}
               className="absolute right-6 top-6 text-[#6B7280] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#06B6D4]"
             />
-            <h2 className="text-2xl font-bold leading-tight text-[#001F3F]">
+            <h4 className="text-2xl font-bold leading-tight text-[#001F3F]">
               Transfer Services
-            </h2>
+            </h4>
+          </Link>
+
+          <Link
+            href="/customer/settings"
+            className="group relative flex min-h-[220px] items-center justify-center rounded-xl border border-gray-200 bg-[#F3F4F6] p-7 text-center shadow-sm transition-all hover:border-[#06B6D4] hover:shadow-md cursor-pointer"
+          >
+            <ArrowUpRight
+              size={20}
+              className="absolute right-6 top-6 text-[#6B7280] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-[#06B6D4]"
+            />
+            <h4 className="text-2xl font-bold leading-tight text-[#001F3F]">
+              Settings
+            </h4>
           </Link>
         </section>
       </div>
