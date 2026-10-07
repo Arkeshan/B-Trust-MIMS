@@ -86,7 +86,7 @@ export default function AgentTransferPage() {
     const debounceTimer = setTimeout(async () => {
       try {
         const res = await fetch(
-          `/api/agent/lookup?nic=${encodeURIComponent(trimmed)}`,
+          `/api/agent/lookup?account_no=${encodeURIComponent(trimmed)}`,
         );
         if (res.ok) {
           const data: CustomerLookupItem[] = await res.json();
@@ -280,7 +280,7 @@ export default function AgentTransferPage() {
                     <input
                       ref={searchInputRef}
                       type="text"
-                      placeholder="Type customer's NIC (e.g. 198000000001)..."
+                      placeholder="Type account number "
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onFocus={() => {
@@ -476,16 +476,11 @@ export default function AgentTransferPage() {
                   htmlFor="txn-remarks"
                   className="block text-xs font-bold uppercase tracking-wider text-[#6B7280] mb-1"
                 >
-                  Remarks
+                  Remarks (Optional)
                 </label>
                 <input
                   id="txn-remarks"
                   type="text"
-                  placeholder={
-                    txnType === "deposit"
-                      ? "e.g., Counter cash deposit by customer"
-                      : "e.g., Over-the-counter cash withdrawal"
-                  }
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
                   disabled={!selectedAccount}

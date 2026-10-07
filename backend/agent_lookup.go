@@ -11,9 +11,9 @@ type CustomerLookupItem struct{
 }
 func AgentCustomerLookupHandler(db *sql.DB) http.HandlerFunc{
 	return func(w http.ResponseWriter, r *http.Request){
-		nic := r.URL.Query().Get("nic")
-		if nic== "" {
-			http.Error(w,"Missing nic parameter", http.StatusBadRequest)
+		accNo := r.URL.Query().Get("account_no")
+		if accNo == "" {
+			http.Error(w,"Missing account_no parameter", http.StatusBadRequest)
 			return
 		}
 		query:= `
@@ -21,9 +21,9 @@ func AgentCustomerLookupHandler(db *sql.DB) http.HandlerFunc{
 			FROM PERSON p 
 			JOIN ACCOUNT_HOLDER ah ON p.person_id = ah.person_id 
 			JOIN SAVINGS_ACCOUNT s ON ah.account_no = s.account_no 
-			WHERE p.nic = ?
+			WHERE s.account_no LIKE ?
 		`
-		rows,err := db.Query(query, nic)
+		rows,err := db.Query(query, accNo + "%")
 		if err !=nil{
 			http.Error(w,err.Error(), http.StatusInternalServerError)
 			return
