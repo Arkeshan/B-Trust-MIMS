@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+
+	"github.com/shopspring/decimal"
 )
 
 // Returns the total count and total value of transactions processed by the logged-in agent.
@@ -21,9 +23,9 @@ func AgentStatsHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		var totalTxns int
-		var totalValue float64
+		var totalValue decimal.Decimal
 
-		// Query thetotal transactions and total value
+		// Query the total transactions and total value
 		err = db.QueryRowContext(r.Context(), `
 			select total_transactions, total_value
 			from vw_agent_transaction_summary
@@ -69,6 +71,7 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 				sa.balance,
 				fd.fd_acc_no,
 				fd.investment
+				
 			from customer c
 			join person p on p.person_id = c.person_id
 			join account_holder ah on ah.person_id = c.person_id
@@ -86,10 +89,10 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 
 		// Group rows by customer since one customer can have multiple accounts
 		type AccountInfo struct {
-			AccountNo    string   `json:"account_no"`
-			Balance      float64  `json:"balance"`
-			FDAccNo      *string  `json:"fd_acc_no,omitempty"`
-			FDInvestment *float64 `json:"fd_investment,omitempty"`
+			AccountNo    string           `json:"account_no"`
+			Balance      decimal.Decimal  `json:"balance"`
+			FDAccNo      *string          `json:"fd_acc_no,omitempty"`
+			FDInvestment *decimal.Decimal `json:"fd_investment,omitempty"`
 		}
 		type CustomerInfo struct {
 			PersonID  int           `json:"person_id"`
@@ -104,9 +107,9 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 		for rows.Next() {
 			var personID int
 			var firstName, lastName, nic, username, accountNo string
-			var balance float64
+			var balance decimal.Decimal
 			var fdAccNo sql.NullString
-			var fdInvestment sql.NullFloat64
+			var fdInvestment decimal.NullDecimal
 
 			if err := rows.Scan(&personID, &firstName, &lastName, &nic, &username, &accountNo, &balance, &fdAccNo, &fdInvestment); err != nil {
 				continue
@@ -131,7 +134,7 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 				acc.FDAccNo = &s
 			}
 			if fdInvestment.Valid {
-				v := fdInvestment.Float64
+				v := fdInvestment.Decimal
 				acc.FDInvestment = &v
 			}
 			customerMap[personID].Accounts = append(customerMap[personID].Accounts, acc)
@@ -177,11 +180,11 @@ func AgentLedgerHandler(db *sql.DB) http.HandlerFunc {
 		defer rows.Close()
 
 		type LedgerRow struct {
-			TxnID       int64          `json:"txn_id"`
-			Type        string         `json:"type"`
-			Amount      float64        `json:"amount"`
-			Date        string         `json:"date"`
-			ReferenceNo sql.NullString `json:"reference_no"`
+			TxnID       int64           `json:"txn_id"`
+			Type        string          `json:"type"`
+			Amount      decimal.Decimal `json:"amount"`
+			Date        string          `json:"date"`
+			ReferenceNo sql.NullString  `json:"reference_no"`
 		}
 
 		ledger := make([]LedgerRow, 0)
