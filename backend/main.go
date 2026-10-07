@@ -14,8 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
-
-func homePage(w http.ResponseWriter, r *http.Request) {
+func homePage(w http.ResponseWriter, r *http.Request){
 	if r.URL.Path !="/"{
 		http.NotFound(w, r)
 		return
@@ -196,6 +195,7 @@ func main() {
 	http.HandleFunc("/api/agent/stats", enableCORS(AgentStatsHandler(db)))
 	http.HandleFunc("/api/agent/customers", enableCORS(AgentCustomersHandler(db)))
 	http.HandleFunc("/api/agent/ledger", enableCORS(AgentLedgerHandler(db)))
+	http.HandleFunc("/api/agent/profile", enableCORS(AgentProfileHandler(db)))
 
 	fmt.Println("B-Trust API running on http://localhost:8080...")
 	log.Fatal(http.ListenAndServe(":8080", nil))
