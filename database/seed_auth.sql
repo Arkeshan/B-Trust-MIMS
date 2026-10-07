@@ -14,7 +14,8 @@ INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status, last_log
     ('agent_ark', 'hash123', 'ark@btrust.lk', 'staff', 'active', NULL),
     ('agent_dinisiru', 'hash123', 'dinisiru@btrust.lk', 'staff', 'active', NULL),
     ('agent_nethmi', 'hash123', 'nethmi@btrust.lk', 'staff', 'active', NULL),
-    ('agent_vimukthi', 'hash123', 'vimukthi@btrust.lk', 'staff', 'active', NULL);
+    ('agent_vimukthi', 'hash123', 'vimukthi@btrust.lk', 'staff', 'active', NULL),
+    ('admin_btrust', '$2a$10$OFRjMpBlKbiZ8tX4qAG4b.nRgxExN8D3a1.poH25cxtxKGuevFnRK', 'admin@btrust.lk', 'admin', 'active',NULL);
 
 -- 3. Create 5 Agent Personal Profiles
 INSERT INTO PERSON (first_name, last_name, nic, dob, phone_number, address, city) VALUES
