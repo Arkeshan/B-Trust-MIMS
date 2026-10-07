@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, FormEvent } from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, X } from "lucide-react";
+import { ArrowLeft, Search, X , AlertCircle} from "lucide-react";
 
 interface AccountPlan {
   plan_id: number;
@@ -281,7 +281,7 @@ export default function OpenSavingsAccountPage() {
           /* 1. Processing Loading View */
           <div className="bg-white border border-gray-200 rounded-2xl p-12 shadow-sm flex flex-col items-center justify-center text-center animate-fade-in min-h-[360px]">
             <div className="relative w-16 h-16 mb-5">
-              <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-[#001F3F] border-r-[#06B6D4] animate-spin"></div>
+              <div className="w-16 h-16 rounded-full border-4 border-gray-100 border-t-[#001F3F] border-r-[#06B6D4] animate-spin"></div>
             </div>
             <p className="text-sm font-semibold text-[#001F3F]">
               Opening account & processing initial deposit...
@@ -352,8 +352,9 @@ export default function OpenSavingsAccountPage() {
             className="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm space-y-6 animate-fade-in"
           >
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
-                {error}
+              <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle size={16} />
+                <span>{error}</span>
               </div>
             )}
 

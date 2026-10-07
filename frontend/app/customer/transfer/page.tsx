@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft , AlertCircle} from "lucide-react";
 
 // $$$ Data Models $$$
 // Model for customer savings accounts.
@@ -317,7 +317,7 @@ export default function CustomerTransferPage() {
           /* $$$ 1. Processing Loading View $$$ */
           <div className="bg-white border border-gray-200 rounded-2xl p-12 shadow-sm flex flex-col items-center justify-center text-center animate-fade-in min-h-[360px]">
             <div className="relative w-16 h-16 mb-5">
-              <div className="w-16 h-16 rounded-full border-4 border-slate-100 border-t-[#001F3F] border-r-[#06B6D4] animate-spin"></div>
+              <div className="w-16 h-16 rounded-full border-4 border-gray-100 border-t-[#001F3F] border-r-[#06B6D4] animate-spin"></div>
             </div>
             <p className="text-sm font-semibold text-[#001F3F]">
               Processing transaction...
@@ -394,12 +394,14 @@ export default function CustomerTransferPage() {
                 Loading accounts...
               </div>
             ) : fetchError ? (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
-                {fetchError}
+              <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle size={16} />
+                <span>{fetchError}</span>
               </div>
             ) : accounts.length === 0 ? (
-              <div className="text-sm text-red-600 py-2">
-                No active savings accounts found for this customer.
+              <div className="flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle size={16} />
+                <span>No active savings accounts found for this customer.</span>
               </div>
             ) : (
               <div className="relative" ref={dropdownRef}>
@@ -491,10 +493,9 @@ export default function CustomerTransferPage() {
 
             {/* Same-account / lookup notice (Smooth animation, minimal text, no red tint) */}
             {recipientError && (
-              <div className="animate-fade-in pt-1 px-1">
-                <p className="text-xs text-[#6B7280]">
-                  {recipientError}
-                </p>
+              <div className="mt-2 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                <AlertCircle size={16} />
+                <span>{recipientError}</span>
               </div>
             )}
           </div>
@@ -556,10 +557,9 @@ export default function CustomerTransferPage() {
 
           {/* Submission Notice / Error */}
           {submitError && (
-            <div className="animate-fade-in px-1 text-center">
-              <p className="text-xs text-[#6B7280]">
-                {submitError}
-              </p>
+            <div className="mt-2 flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+              <AlertCircle size={16} />
+              <span>{submitError}</span>
             </div>
           )}
 

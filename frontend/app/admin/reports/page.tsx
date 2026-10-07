@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut , AlertCircle} from "lucide-react";
 
 // ==========================================
 // 1. TYPES & CONSTANTS

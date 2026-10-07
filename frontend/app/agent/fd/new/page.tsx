@@ -166,7 +166,10 @@ export default function AgentNewFDPage() {
           </form>
 
           {searchError && (
-            <p className="mt-3 text-sm text-red-600 font-medium">{searchError}</p>
+            <div className="mt-3 flex items-center gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+              <AlertCircle size={16} />
+              <span>{searchError}</span>
+            </div>
           )}
 
           {customer && (
