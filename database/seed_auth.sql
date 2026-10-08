@@ -10,11 +10,11 @@ INSERT INTO BRANCH (branch_name, address, phone_number) VALUES
 
 -- 2. Create 5 Agent Login Accounts
 INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status, last_login) VALUES
-    ('agent_achira', 'hash123', 'achira@btrust.lk', 'staff', 'active', NULL),
-    ('agent_ark', 'hash123', 'ark@btrust.lk', 'staff', 'active', NULL),
-    ('agent_dinisiru', 'hash123', 'dinisiru@btrust.lk', 'staff', 'active', NULL),
-    ('agent_nethmi', 'hash123', 'nethmi@btrust.lk', 'staff', 'active', NULL),
-    ('agent_vimukthi', 'hash123', 'vimukthi@btrust.lk', 'staff', 'active', NULL);
+    ('agent_achira', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'achira@btrust.lk', 'staff', 'active', NULL),
+    ('agent_ark', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'ark@btrust.lk', 'staff', 'active', NULL),
+    ('agent_dinisiru', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'dinisiru@btrust.lk', 'staff', 'active', NULL),
+    ('agent_nethmi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'nethmi@btrust.lk', 'staff', 'active', NULL),
+    ('agent_vimukthi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'vimukthi@btrust.lk', 'staff', 'active', NULL);
 
 -- 3. Create 5 Agent Personal Profiles
 INSERT INTO PERSON (first_name, last_name, nic, dob, phone_number, address, city) VALUES

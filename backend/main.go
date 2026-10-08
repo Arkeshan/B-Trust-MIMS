@@ -9,7 +9,6 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func homePage(w http.ResponseWriter, r *http.Request) {
@@ -63,21 +62,6 @@ func main() {
 
 	if err := db.Ping(); err != nil {
 		log.Fatal("Error pinging database: ", err)
-	}
-
-	hashedPwd, _ := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	_, err = db.Exec(`
-        INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status) 
-		VALUES (?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-			password_hash = VALUES(password_hash),
-			email = VALUES(email),
-			type = VALUES(type),
-			status = VALUES(status)`,
-		"agent_achira", string(hashedPwd), "achira@btrust.com", "staff", "active",
-	)
-	if err != nil {
-		log.Println("Warning: Could not seed test user:", err)
 	}
 
 	http.HandleFunc("/", homePage)
