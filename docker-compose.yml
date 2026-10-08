@@ -3,9 +3,10 @@ services:
     image: mysql:8.0
     container_name: btrust_db
     restart: always
+    env_file : .env
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-ArkeSabay@2k4}
-      MYSQL_DATABASE: btrust
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
     ports:
       - "3307:3306"
     volumes:
@@ -15,6 +16,7 @@ services:
       - ./database/procedures.sql:/docker-entrypoint-initdb.d/4-procedures.sql
       - ./database/seed_auth.sql:/docker-entrypoint-initdb.d/5-seed_auth.sql
       - ./database/seed_accounts.sql:/docker-entrypoint-initdb.d/6-seed_accounts.sql
+      - ./database/events.sql:/docker-entrypoint-initdb.d/7-events.sql
       - db_data:/var/lib/mysql
     # Let MySQL initialize natively; the seed files will run automatically if db is empty.
 
@@ -29,7 +31,7 @@ services:
       - ./backend/.env
     environment:
       - DB_USER=root
-      - DB_PASSWORD=${DB_ROOT_PASSWORD:-ArkeSabay@2k4}
+      - DB_PASSWORD=${DB_ROOT_PASSWORD}
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=btrust
