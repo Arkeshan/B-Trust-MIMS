@@ -84,7 +84,18 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
 
-      const data = await res.json();
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        if (!res.ok) {
+          if (res.status === 401) throw new Error("Invalid username or password.");
+          if (res.status === 403) throw new Error("Account is locked.");
+          if (res.status === 429) throw new Error("Too many failed login attempts.");
+        }
+        throw new Error("Server error or backend is not reachable.");
+      }
 
       if (!res.ok) {
         throw new Error(data.error || "Login failed. Please check your credentials.");
@@ -105,7 +116,7 @@ export default function LoginPage() {
               expiresAt: Date.now() + remaining * 1000,
             })
           );
-        } catch {}
+        } catch { }
         return;
       }
 
@@ -137,7 +148,18 @@ export default function LoginPage() {
         body: JSON.stringify({ temp_token: tempToken, otp }),
       });
 
-      const data = await res.json();
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        if (!res.ok) {
+          if (res.status === 401) throw new Error("Invalid username or password.");
+          if (res.status === 403) throw new Error("Account is locked.");
+          if (res.status === 429) throw new Error("Too many failed login attempts.");
+        }
+        throw new Error("Server error or backend is not reachable.");
+      }
 
       if (!res.ok) {
         throw new Error(data.error || "Verification failed. Please check your code.");
@@ -170,7 +192,18 @@ export default function LoginPage() {
         body: JSON.stringify({ temp_token: tempToken }),
       });
 
-      const data = await res.json();
+      let data;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        if (!res.ok) {
+          if (res.status === 401) throw new Error("Invalid username or password.");
+          if (res.status === 403) throw new Error("Account is locked.");
+          if (res.status === 429) throw new Error("Too many failed login attempts.");
+        }
+        throw new Error("Server error or backend is not reachable.");
+      }
 
       if (!res.ok) {
         if (data.seconds_remaining) {
@@ -190,7 +223,7 @@ export default function LoginPage() {
               expiresAt: Date.now() + 300 * 1000,
             })
           );
-        } catch {}
+        } catch { }
       }
       setTimeLeft(300);
       setOtp("");
@@ -343,8 +376,8 @@ export default function LoginPage() {
                   {resending
                     ? "Sending..."
                     : timeLeft > 0
-                    ? `Resend in ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, "0")}`
-                    : "Resend Code"}
+                      ? `Resend in ${Math.floor(timeLeft / 60)}:${(timeLeft % 60).toString().padStart(2, "0")}`
+                      : "Resend Code"}
                 </button>
               </div>
             </form>
