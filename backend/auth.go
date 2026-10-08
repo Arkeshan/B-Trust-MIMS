@@ -140,7 +140,9 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 
 		var req LoginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			http.Error(w, "Invalid input format", http.StatusBadRequest)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Invalid input format"})
 			return
 		}
 
@@ -151,7 +153,9 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 		if err != nil {
 			recordFailedLogin(clientIP)
 			log.Printf("Login failed: User '%s' not found\n", req.Username)
-			http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Invalid username or password"})
 			return
 		}
 
@@ -166,7 +170,9 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 				}
 			} else {
 				recordFailedLogin(clientIP)
-				http.Error(w, "Invalid username or password", http.StatusUnauthorized)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUnauthorized)
+				json.NewEncoder(w).Encode(ErrorResponse{Error: "Invalid username or password"})
 				return
 			}
 		}
