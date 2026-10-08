@@ -21,7 +21,11 @@ export default function SavingsHistory({ accountId }: { accountId: string }) {
     const fetchHistory = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://localhost:8080/api/account/${accountId}/history/recent`);
+        const sessionId = localStorage.getItem("session_id") || "";
+        const res = await fetch(`/api/account/${accountId}/history/recent`, {
+          headers: { Authorization: `Bearer ${sessionId}` },
+          credentials: "include",
+        });
         if (res.ok) {
           const data = await res.json();
           setTransactions(data);

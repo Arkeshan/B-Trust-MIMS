@@ -8,13 +8,14 @@ INSERT INTO BRANCH (branch_name, address, phone_number) VALUES
     ('Trinco Branch', '12 Beach Road', '0262223344'),
     ('Ampara Hub', '88 Central Way', '0632223344');
 
--- 2. Create 5 Agent Login Accounts
+-- 2. Create 5 Agent Login Accounts + 1 Admin Account
 INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status, last_login) VALUES
     ('agent_achira', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'achira@btrust.lk', 'staff', 'active', NULL),
     ('agent_ark', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'ark@btrust.lk', 'staff', 'active', NULL),
     ('agent_dinisiru', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'dinisiru@btrust.lk', 'staff', 'active', NULL),
     ('agent_nethmi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'nethmi@btrust.lk', 'staff', 'active', NULL),
-    ('agent_vimukthi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'vimukthi@btrust.lk', 'staff', 'active', NULL);
+    ('agent_vimukthi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'vimukthi@btrust.lk', 'staff', 'active', NULL),
+    ('admin_btrust', '$2a$10$OFRjMpBlKbiZ8tX4qAG4b.nRgxExN8D3a1.poH25cxtxKGuevFnRK', 'admin@btrust.lk', 'admin', 'active', NULL);
 
 -- 3. Create 5 Agent Personal Profiles
 INSERT INTO PERSON (first_name, last_name, nic, dob, phone_number, address, city) VALUES

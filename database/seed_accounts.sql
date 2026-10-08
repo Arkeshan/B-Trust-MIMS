@@ -83,7 +83,7 @@ INSERT INTO ACCOUNT_HOLDER (person_id, account_no) VALUES
     (19, 'ACC000000008'),
     (20, 'ACC000000009');
 
--- 6. insert trasactions.
+-- 6. Insert Batch Transactions (100+ Realistic Transactions)
 INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, timestamp, reference_no) VALUES
     ('ACC000000001', 1, 'deposit', 5000.00, 0.00, '2026-08-06 09:15:00', 'REF-DEP-1001'),
     ('ACC000000002', 2, 'deposit', 12000.00, 0.00, '2026-08-06 10:30:00', 'REF-DEP-1002'),
@@ -195,7 +195,9 @@ INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_
     ('ACC000000002', 3, 'deposit',    4000.00,  0.00, '2026-10-08 11:00:00', 'REF-DEP-1078'),
     ('ACC000000004', 4, 'withdrawal', 1000.00,  0.00, '2026-10-08 14:00:00', 'REF-WDL-1079'),
     ('ACC000000010', 5, 'deposit',    2500.00,  0.00, '2026-10-08 15:45:00', 'REF-DEP-1080');
-insert into FIXED_DEPOSIT (fd_acc_no, account_no, fd_plan_id,investment,start_date,interest_paid_to_date,next_payout_date) VALUES
+
+-- 7. Seed 10 Fixed Deposits (1 per Savings Account)
+INSERT INTO FIXED_DEPOSIT (fd_acc_no, account_no, fd_plan_id, investment, start_date, interest_paid_to_date, next_payout_date) VALUES
     ('FD000000001', 'ACC000000001', 1, 50000.00,  '2026-08-01', 0.00, '2026-09-01'),
     ('FD000000002', 'ACC000000002', 2, 100000.00, '2026-08-05', 0.00, '2026-09-05'),
     ('FD000000003', 'ACC000000003', 3, 250000.00, '2026-08-10', 0.00, '2026-09-10'),
@@ -206,4 +208,3 @@ insert into FIXED_DEPOSIT (fd_acc_no, account_no, fd_plan_id,investment,start_da
     ('FD000000008', 'ACC000000008', 1, 20000.00,  '2026-09-05', 0.00, '2026-10-05'),
     ('FD000000009', 'ACC000000009', 1, 25000.00,  '2026-09-10', 0.00, '2026-10-10'),
     ('FD000000010', 'ACC000000010', 3, 150000.00, '2026-09-15', 0.00, '2026-10-15');
-
