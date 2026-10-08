@@ -3,7 +3,7 @@ services:
     image: mysql:8.0
     container_name: btrust_db
     restart: always
-    env_file : .env
+    env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
@@ -48,6 +48,17 @@ services:
     environment:
       - BACKEND_URL=http://backend:8080
     depends_on:
+      - backend
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: btrust_nginx
+    restart: always
+    ports:
+      - "443:443"
+    depends_on:
+      - frontend
       - backend
 
 volumes:
