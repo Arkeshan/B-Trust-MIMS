@@ -79,8 +79,8 @@ SELECT
         ELSE 0 END), 0) AS net_balance_change
 FROM CUSTOMER c
 JOIN PERSON p          ON p.person_id = c.person_id
-JOIN ACCOUNT_HOLDER ah ON ah.person_id = c.person_id
-JOIN SAVINGS_ACCOUNT sa ON sa.account_no = ah.account_no
+LEFT JOIN ACCOUNT_HOLDER ah ON ah.person_id = c.person_id
+LEFT JOIN SAVINGS_ACCOUNT sa ON sa.account_no = ah.account_no
 LEFT JOIN TRANSACTION t ON t.account_no = sa.account_no
 GROUP BY c.person_id, p.first_name, p.last_name;
 
