@@ -31,6 +31,9 @@ func enableCORS(next http.HandlerFunc) http.HandlerFunc {
 			"http://127.0.0.1:3000": true,
 			"http://frontend:3000":  true,
 		}
+		if frontendURL := os.Getenv("FRONTEND_URL"); frontendURL != "" {
+			allowedOrigins[strings.TrimRight(frontendURL, "/")] = true
+		}
 		if allowedOrigins[origin] || (os.Getenv("ENV") != "production" && origin != "") {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -95,7 +98,15 @@ func main() {
 		dbName = "btrust"
 	}
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local", dbUser, dbPassword, dbHost, dbPort, dbName)
+	tlsParam := ""
+	if dbTLS := os.Getenv("DB_TLS"); dbTLS != "" {
+		tlsParam = "&tls=" + dbTLS
+	} else if dbHost != "127.0.0.1" && dbHost != "localhost" && dbHost != "db" {
+		// Managed cloud MySQL providers (such as Aiven) require TLS connections by default
+		tlsParam = "&tls=skip-verify"
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local%s", dbUser, dbPassword, dbHost, dbPort, dbName, tlsParam)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error connecting to database: ", err)
@@ -197,6 +208,10 @@ func main() {
 	http.HandleFunc("/api/agent/customers", enableCORS(AgentCustomersHandler(db)))
 	http.HandleFunc("/api/agent/ledger", enableCORS(AgentLedgerHandler(db)))
 
-	fmt.Println("B-Trust API running on http://localhost:8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	fmt.Printf("B-Trust API running on http://localhost:%s...\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

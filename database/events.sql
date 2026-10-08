@@ -1,6 +1,4 @@
-
-SET GLOBAL event_scheduler=ON;
-
+-- Note: event_scheduler is enabled by default in MySQL 8.0 and Aiven Cloud
 DROP EVENT IF EXISTS process_fd_interest_event;
 
 CREATE EVENT process_fd_interest_event
