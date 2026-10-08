@@ -4,6 +4,15 @@ const backendUrl = process.env.BACKEND_URL || "http://localhost:8080";
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.19.64.1"],
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/login",
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
