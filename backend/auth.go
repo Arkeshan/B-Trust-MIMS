@@ -221,7 +221,7 @@ func LoginHandler(db *sql.DB) http.HandlerFunc {
 				return
 			}
 
-			_ = SendEmailOTP(email, plainOTP)
+			go SendEmailOTP(email, plainOTP)
 
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
