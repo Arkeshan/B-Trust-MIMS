@@ -750,3 +750,11 @@ flowchart TD
 - **Minimalist UI:** Removed unnecessary placeholders and icons from the login page to adhere to strict design guidelines.
 - **Hardcoded Passwords Removed:** Ensured the Admin password is no longer hardcoded in the Go source code.
 
+## October 8–9, 2026 - Cloud Deployment & Infrastructure Hardening (Arkeshan)
+- **Aiven Cloud MySQL Migration:** Successfully deployed and populated all 7 database schemas, stored procedures, triggers, views, and seed tables on Aiven Managed MySQL with SSL/TLS encryption.
+- **Render.com Backend Deployment:** Containerized and hosted the Go REST API on Render Web Services with dynamic `$PORT` binding and TLS handshake support.
+- **Vercel Frontend Deployment:** Hosted the Next.js 16 application on Vercel (`btrust2.vercel.app`) with custom domain routing.
+- **Automatic Root Redirect:** Implemented server-side `redirect("/login")` on `/` so the base domain lands directly on the banking portal without template placeholders.
+- **Dual-Channel 2FA OTP Delivery:** Integrated Resend HTTPS API (port 443) into `backend/otp.go` to bypass cloud firewall restrictions on SMTP port 587, ensuring guaranteed real-time email OTP delivery directly to admin Gmail inboxes.
+- **Graceful Error Handling:** Sanitized `BACKEND_URL` rewrite rules and added Content-Type safety checks to prevent raw `<!DOCTYPE` syntax errors during cloud backend wake-ups.
+

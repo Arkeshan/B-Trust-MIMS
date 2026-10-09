@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -61,31 +62,7 @@ func SendEmailOTP(toEmail, otpCode string) error {
 		toEmail, otpCode,
 	)
 
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	smtpUser := os.Getenv("SMTP_USER")
-	smtpPass := os.Getenv("SMTP_PASS")
-	smtpFrom := os.Getenv("SMTP_FROM")
-
-	if smtpFrom == "" {
-		smtpFrom = smtpUser
-	}
-	if smtpPort == "" {
-		smtpPort = "587"
-	}
-
-	// If SMTP credentials are not configured, skip network dispatch without failing
-	if smtpHost == "" || smtpUser == "" || smtpPass == "" {
-		log.Println("[2FA] SMTP credentials not set in .env; skipping live email dispatch (code logged above).")
-		return nil
-	}
-
-	addr := fmt.Sprintf("%s:%s", smtpHost, smtpPort)
-	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
-
-	subject := fmt.Sprintf("Subject: B-Trust MIMS Security Verification Code: %s\r\n", otpCode)
-	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	body := fmt.Sprintf(`
+	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
 <head>
@@ -114,7 +91,41 @@ func SendEmailOTP(toEmail, otpCode string) error {
 </html>
 `, otpCode)
 
-	msg := []byte(subject + mimeHeaders + body)
+	// 1. Check if Resend HTTPS API Key is set (bypasses cloud host SMTP firewall blocks on port 587)
+	if resendKey := os.Getenv("RESEND_API_KEY"); resendKey != "" {
+		if err := sendViaResend(resendKey, toEmail, otpCode, htmlBody); err != nil {
+			log.Printf("[2FA RESEND ERROR] Failed to send email via Resend API: %v\n", err)
+		} else {
+			return nil
+		}
+	}
+
+	smtpHost := os.Getenv("SMTP_HOST")
+	smtpPort := os.Getenv("SMTP_PORT")
+	smtpUser := os.Getenv("SMTP_USER")
+	smtpPass := os.Getenv("SMTP_PASS")
+	smtpFrom := os.Getenv("SMTP_FROM")
+
+	if smtpFrom == "" {
+		smtpFrom = smtpUser
+	}
+	if smtpPort == "" {
+		smtpPort = "587"
+	}
+
+	// If SMTP credentials are not configured, skip network dispatch without failing
+	if smtpHost == "" || smtpUser == "" || smtpPass == "" {
+		log.Println("[2FA] SMTP credentials not set in .env; skipping live email dispatch (code logged above).")
+		return nil
+	}
+
+	addr := fmt.Sprintf("%s:%s", smtpHost, smtpPort)
+	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
+
+	subject := fmt.Sprintf("Subject: B-Trust MIMS Security Verification Code: %s\r\n", otpCode)
+	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
+
+	msg := []byte(subject + mimeHeaders + htmlBody)
 
 	err := smtp.SendMail(addr, auth, smtpFrom, []string{toEmail}, msg)
 	if err != nil {
@@ -123,6 +134,57 @@ func SendEmailOTP(toEmail, otpCode string) error {
 	}
 
 	log.Printf("[2FA] Live verification email delivered successfully to %s\n", toEmail)
+	return nil
+}
+
+type resendPayload struct {
+	From    string   `json:"from"`
+	To      []string `json:"to"`
+	Subject string   `json:"subject"`
+	HTML    string   `json:"html"`
+}
+
+// sendViaResend delivers the OTP email over HTTPS (port 443) using the Resend API.
+func sendViaResend(apiKey, toEmail, otpCode, htmlBody string) error {
+	fromEmail := os.Getenv("RESEND_FROM")
+	if fromEmail == "" {
+		fromEmail = "B-Trust Banking <onboarding@resend.dev>"
+	}
+
+	payload := resendPayload{
+		From:    fromEmail,
+		To:      []string{toEmail},
+		Subject: fmt.Sprintf("B-Trust MIMS Security Verification Code: %s", otpCode),
+		HTML:    htmlBody,
+	}
+
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to encode resend payload: %w", err)
+	}
+
+	req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create resend http request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("http request to resend failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		var errData map[string]any
+		_ = json.NewDecoder(resp.Body).Decode(&errData)
+		return fmt.Errorf("resend API returned error (status %d): %v", resp.StatusCode, errData)
+	}
+
+	log.Printf("[2FA] Live verification email delivered successfully via Resend HTTPS API to %s\n", toEmail)
 	return nil
 }
 

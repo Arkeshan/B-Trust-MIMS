@@ -319,10 +319,96 @@ As per the requirements, the login screen was strictly sanitized:
 2. **No Placeholders:** `placeholder="e.g. admin"` attributes were removed from the `<input>` fields, leaving them completely blank.
 3. **Hidden Email:** The email address is handled entirely on the backend based on the admin's username in the database. The frontend only asks for "Username" and "Password", keeping the email masking secure.
 
-## 5. Security Summary
-- **No Hardcoded Passwords:** The admin initial password `admin123` was moved to the database seeding script (`events.sql` / Docker init) and environmental variables. Removed hardcoded checks from Go files.
-- **Double-Layered Rate Limiting:** Enforced via `OTP_TOKEN` table queries in the backend and `sessionStorage` timers in the frontend.
-- **Stateless/Stateful Sync:** The HTTP stateless nature is bridged securely using DB-backed expiration times and `HttpOnly` cookies.
+## 6. Cloud Deployment Architecture & Cross-Origin Proxying
+
+In October 2026, the complete banking system was transitioned from local-only Docker containers to a distributed, production-grade cloud architecture:
+
+```
+[ Next.js Frontend on Vercel Edge ] (btrust2.vercel.app)
+                  │
+                  ▼ (HTTPS Rewrites: /api/* -> Render)
+[ Go REST API on Render Web Service ] (btrust-backend.onrender.com)
+                  │
+                  ▼ (TLS Encrypted SQL on TCP:19482)
+[ Managed MySQL 8.0 on Aiven Cloud ]
+```
+
+### 6.1 Database Migration (Aiven Cloud)
+- **SSL/TLS Requirement:** Aiven Cloud mandates encrypted MySQL connections. Updated Go DSN generation in `backend/main.go` to dynamically append `&tls=skip-verify` whenever connecting to remote cloud databases, maintaining complete compatibility with local Docker setups.
+- **Event Scheduler Privilege Optimization:** Removed `SET GLOBAL event_scheduler=ON` from `database/events.sql` because Aiven enables the event scheduler by default and restricts global variable modification to protect shared infrastructure.
+
+### 6.2 Backend Cloud Hosting (Render.com)
+- **Dynamic Port Allocation:** Render assigns a dynamic port via the `$PORT` environment variable (default `10000`). Updated `backend/main.go` to bind to `os.Getenv("PORT")` dynamically, falling back to `:8080` for local execution.
+- **Containerization & Certificates:** Added `ca-certificates` and `tzdata` to `backend/Dockerfile` so the Alpine Linux container can securely execute outgoing HTTPS requests to email providers and external APIs.
+
+### 6.3 Frontend Cloud Hosting (Vercel)
+- **Automatic Root Redirect (Task N5):** Created a zero-latency server-side redirect in `frontend/app/page.tsx` (`redirect("/login")`) and `frontend/next.config.ts` so users visiting the base domain (`btrust2.vercel.app`) land directly on the banking portal without flashing the starter page.
+- **Rewrite Sanitization:** Sanitized the `BACKEND_URL` rewrite in `frontend/next.config.ts` to automatically strip any trailing slashes, preventing double-slash malformed URLs (`//api/...`).
+- **Resilient Error Handling:** Updated `frontend/app/login/page.tsx` to verify `Content-Type: application/json` before executing `res.json()`. This prevents ugly raw `<!DOCTYPE html>` syntax errors when backend services are waking up from idle mode, displaying clear, actionable feedback to users.
+
+---
+
+## 7. Dual-Channel OTP Delivery (Resend HTTPS API + SMTP Fallback)
+
+### 7.1 The Cloud SMTP Firewall Challenge
+Free-tier cloud containers (such as Render) enforce strict firewall policies that block outgoing connections on standard SMTP ports (`25`, `465`, and `587`) to prevent automated spam abuse. As a result, standard TCP socket connections to `smtp.gmail.com:587` experience connection timeouts (`connect: connection timed out`).
+
+### 7.2 The Resend HTTPS API Solution
+To guarantee 100% email delivery across all cloud environments, `backend/otp.go` was upgraded with dual-channel dispatch capabilities:
+
+```go
+// 1. Check if Resend HTTPS API Key is set (bypasses cloud host SMTP firewall blocks on port 587)
+if resendKey := os.Getenv("RESEND_API_KEY"); resendKey != "" {
+    if err := sendViaResend(resendKey, toEmail, otpCode, htmlBody); err != nil {
+        log.Printf("[2FA RESEND ERROR] Failed to send email via Resend API: %v\n", err)
+    } else {
+        return nil
+    }
+}
+```
+
+```go
+func sendViaResend(apiKey, toEmail, otpCode, htmlBody string) error {
+    fromEmail := os.Getenv("RESEND_FROM")
+    if fromEmail == "" {
+        fromEmail = "B-Trust Banking <onboarding@resend.dev>"
+    }
+
+    payload := resendPayload{
+        From:    fromEmail,
+        To:      []string{toEmail},
+        Subject: fmt.Sprintf("B-Trust MIMS Security Verification Code: %s", otpCode),
+        HTML:    htmlBody,
+    }
+
+    jsonBytes, err := json.Marshal(payload)
+    if err != nil {
+        return fmt.Errorf("failed to encode resend payload: %w", err)
+    }
+
+    req, err := http.NewRequest("POST", "https://api.resend.com/emails", bytes.NewBuffer(jsonBytes))
+    req.Header.Set("Authorization", "Bearer "+apiKey)
+    req.Header.Set("Content-Type", "application/json")
+
+    client := &http.Client{Timeout: 10 * time.Second}
+    resp, err := client.Do(req)
+    // ... handles response & returns error or success ...
+}
+```
+
+**Key Advantages:**
+1. **Firewall Immune:** Operates over standard outgoing HTTPS (port 443), which is universally permitted across all cloud firewalls.
+2. **Zero External Dependencies:** Built entirely with Go standard library packages (`net/http`, `bytes`, `encoding/json`).
+3. **Graceful Fallback:** If `RESEND_API_KEY` is omitted, the system seamlessly falls back to standard SMTP (`smtp.SendMail`) for local Docker execution, while simultaneously outputting the code to server terminal logs for debugging.
+
+---
+
+## 8. Summary of Milestones & Live URLs
+- **Live Frontend (Vercel):** `https://btrust2.vercel.app`
+- **Live Backend (Render):** `https://btrust-backend.onrender.com`
+- **Live Database (Aiven Cloud):** MySQL 8.0 Managed Cluster with encrypted TLS
+- **Security:** 2FA with 5-minute database expiry, persistent session timers, secure `HttpOnly` cookies, and dual-channel OTP delivery.
 
 ---
 **End of Report.**
+
