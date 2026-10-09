@@ -19,7 +19,7 @@ interface SavingsAccount {
 
 export default function AgentNewFDPage() {
   // Step 1 Search State
-  const [searchUsername, setSearchUsername] = useState("");
+  const [searchAccountNo, setSearchAccountNo] = useState("");
   const [customer, setCustomer] = useState<CustomerInfo | null>(null);
   const [searchError, setSearchError] = useState("");
 
@@ -44,12 +44,12 @@ export default function AgentNewFDPage() {
       const token = localStorage.getItem("session_id") || "";
 
       //  Fetch customer details
-      const customerRes = await fetch(`/api/agent/customer/search?username=${searchUsername}`, {
+      const customerRes = await fetch(`/api/agent/customer/search?account_no=${searchAccountNo}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!customerRes.ok) {
-        throw new Error("Customer not found or invalid username");
+        throw new Error("Customer not found for this account number");
       }
 
       const customerData = await customerRes.json();
@@ -150,9 +150,9 @@ export default function AgentNewFDPage() {
               </div>
               <input
                 type="text"
-                placeholder="Enter Customer Username..."
-                value={searchUsername}
-                onChange={(e) => setSearchUsername(e.target.value)}
+                placeholder="Enter Savings Account Number..."
+                value={searchAccountNo}
+                onChange={(e) => setSearchAccountNo(e.target.value)}
                 required
                 className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm focus:border-[#06B6D4] focus:outline-none"
               />

@@ -234,12 +234,12 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// 2. Otherwise, check FD customer search by username
-		searchUsername := strings.TrimSpace(r.URL.Query().Get("username"))
-		if searchUsername == "" {
+		// 2. Otherwise, check FD customer search by account_no
+		searchAccountNo := strings.TrimSpace(r.URL.Query().Get("account_no"))
+		if searchAccountNo == "" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "nic or username parameter is required"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "nic or account_no parameter is required"})
 			return
 		}
 
@@ -252,18 +252,18 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Fetch customer basic info
+		// Fetch customer basic info via account number
 		var personID int
 		var firstName, lastName, nic string
 		err = db.QueryRowContext(r.Context(), `
-			select p.person_id, p.first_name, p.last_name, p.nic
-			from customer c
-			join person p on p.person_id = c.person_id
-			where c.username = ?`, searchUsername).Scan(&personID, &firstName, &lastName, &nic)
+			SELECT p.person_id, p.first_name, p.last_name, p.nic
+			FROM person p
+			JOIN account_holder ah ON p.person_id = ah.person_id
+			WHERE ah.account_no = ?`, searchAccountNo).Scan(&personID, &firstName, &lastName, &nic)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "customer not found"})
+			json.NewEncoder(w).Encode(map[string]string{"error": "customer not found for this account"})
 			return
 		}
 
@@ -304,7 +304,7 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			"first_name": firstName,
 			"last_name":  lastName,
 			"nic":        nic,
-			"username":   searchUsername,
+			"account_no": searchAccountNo,
 			"accounts":   accounts,
 		})
 	}
