@@ -13,6 +13,12 @@ Enterprise banking solution featuring customer internet banking, staff/agent cou
 - **Backend REST API (Render):** [https://btrust-backend.onrender.com](https://btrust-backend.onrender.com)
 - **Database (Aiven Cloud):** MySQL 8.0 Cloud Cluster with TLS Encryption
 
+## Documentation & Viva Study Resources
+- **Master Viva Defense Guide (Arkeshan):** [ARKESHAN_VIVA_MASTER_GUIDE.md](./ARKESHAN_VIVA_MASTER_GUIDE.md) — Comprehensive technical architecture, full implementation code, triggers, ACID flows, and 60+ expected viva Q&As.
+- **Admin 2FA Security Report:** [arkeshan_final_implementation_report.md](./arkeshan_final_implementation_report.md)
+- **Agent Portal Architecture Plan:** [Agent_Portal_Assignments.md](./Agent_Portal_Assignments.md)
+- **Project Team Matrix:** [CONTRIBUTORS.md](./CONTRIBUTORS.md)
+
 ## Quick Start (Local Docker Containerization)
 
 Run the entire bank stack (Database + Backend + Frontend) with a single command:
@@ -59,6 +65,8 @@ docker-compose down
 ## Recent Updates
 
 ### October 8–9, 2026 (Arkeshan)
+- **Customer Search Route Unification:** Resolved a critical route collision on `/api/agent/customer/search` by implementing unified query parameter routing (supporting both `?nic=` for Guardian-aware savings account origination and `?username=` for Fixed Deposit origination) in `backend/agent_fd.go`.
+- **Cross-Origin Auth & CORS Hardening:** Updated `GetStaffPersonID` in `backend/auth.go` to prioritize `Authorization: Bearer <session_id>` headers over cookies, eliminating cross-domain authentication drops between Vercel and Render. Cleaned up redundant hardcoded localhost CORS headers so `enableCORS` serves `btrust2.vercel.app` dynamically.
 - **Cloud Architecture Deployment:** Successfully migrated database to **Aiven Cloud MySQL**, containerized the backend on **Render.com**, and deployed the frontend to **Vercel** (`btrust2.vercel.app`).
 - **Resend HTTPS OTP Integration:** Implemented HTTPS API email dispatch in `backend/otp.go` to bypass cloud firewall blocks on SMTP port 587, delivering verification codes directly to admin Gmail inboxes.
 - **Root URL Auto-Redirect:** Added server-side auto-redirect from `/` to `/login` with zero client-side latency.
