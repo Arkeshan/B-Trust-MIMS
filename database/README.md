@@ -66,3 +66,8 @@ Runs every 1 month to execute ProcessFDInterest().
 ## Seeds (seed_accounts.sql, seed_auth.sql) (Arkeshan)
 
 Initial test data: branches, staff, customers (including joint accounts), FDs, and sample transactions.
+
+## Cloud Deployment (Aiven Cloud) (Arkeshan)
+
+- Deployed on Aiven Cloud Managed MySQL 8.0 with SSL/TLS encryption.
+- Fully compatible with cloud security restrictions (optimized `events.sql` to leverage Aiven's default-enabled event scheduler without requiring restricted `SUPER` / `SET GLOBAL` privileges).

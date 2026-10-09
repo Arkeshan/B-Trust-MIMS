@@ -5,11 +5,13 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
 
 ## Pages
 
-- `/login` (`app/login/page.tsx`) - Achira, Sathika
-  Login form with dashboard color theme (navy/cyan), stores session in localStorage, role redirects:
-  - customer -> `/customer/dashboard`
-  - staff -> `/agent/transfer`
-  - admin -> `/admin/reports`
+- `/` (`app/page.tsx`) - Arkeshan
+  Zero-latency server-side redirect to `/login` ensuring the base domain lands directly on the banking application.
+- `/login` (`app/login/page.tsx`) - Achira, Sathika, Arkeshan
+  Unified login portal with 2FA email verification modal:
+  - Role-based redirects: customer -> `/customer/dashboard`, staff -> `/agent/dashboard`, admin -> `/admin/reports`
+  - Two-Factor Authentication (OTP): 6-digit code validation with persistent 5-minute timer surviving page reloads
+  - Resilient error handling: gracefully surfaces cloud cold-start states rather than raw JSON syntax errors
 - `/customer/dashboard` (`app/customer/dashboard/page.tsx`) - Nimthara
   Main navigation cards for customer features with header Logout button (clears session and cookie).
 - `/customer/savings` (`app/customer/savings/page.tsx`) - Nimthara, Arkeshan
@@ -22,8 +24,10 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
   Counter deposit and withdrawal form for bank agents.
 - `/agent/accounts/new` (`app/agent/accounts/new/page.tsx`) - Arkeshan
   Minimalist 3-row wizard for account origination (plan selection, initial deposit, customer NIC search & association).
+- `/admin/layout.tsx` - Dinisuru, Arkeshan
+  Admin portal shell with sidebar navigation and session guard checking admin role.
 - `/admin/reports` (`app/admin/reports/page.tsx`) - Sathika, Arkeshan
-  5 management reports tabs (Agent Summary, Account Summary, Active FDs, Monthly Interest, Customer Activity).
+  5 management reports tabs (Agent Summary, Account Summary, Active FDs, Monthly Interest, Customer Activity) with CSV download.
 
 ## Components
 

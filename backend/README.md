@@ -8,8 +8,10 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 ## Endpoints
 
 - GET / - Health check (Arkeshan)
-- POST /api/auth/login - User login with bcrypt (Achira, Sathika)
-- POST /api/auth/logout - User logout, deletes session from DB and clears cookie
+- POST /api/auth/login - User login with bcrypt and 2FA trigger (Achira, Sathika, Arkeshan)
+- POST /api/auth/otp/verify - Verify 6-digit OTP and create authenticated session (Arkeshan)
+- POST /api/auth/otp/resend - Resend 2FA verification code with 5-minute cooldown (Arkeshan)
+- POST /api/auth/logout - User logout, deletes session from DB and clears cookie (Arkeshan)
 - GET /api/customer/accounts - List savings accounts for logged in user (Arkeshan)
 - GET /api/account/lookup?account_no= - Lookup account holder name with masking (Arkeshan)
 - POST /api/customer/transfer - Fund transfer between accounts, ACID transaction (Arkeshan)
@@ -41,10 +43,17 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 - maskName: helper to mask names
 
 ### auth.go (Achira, Sathika, Arkeshan)
-- LoginHandler: checks username and password against db using bcrypt, sets session
+- LoginHandler: checks username and password against db using bcrypt, triggers 2FA for admin accounts, sets session
 - LogoutHandler: deletes active session from USER_SESSION and expires session_id cookie
 - getAuthenticatedUser: reads session token from header or cookie
 - generateSessionToken: crypto/rand session token generator
+
+### otp.go (Arkeshan)
+- SendEmailOTP: dual-channel OTP dispatch (Resend HTTPS API over port 443 + standard SMTP fallback + server console audit logging)
+- sendViaResend: delivers HTML verification emails over HTTPS to bypass cloud SMTP port 587 firewall blocks
+- CreateOTP: cryptographically secure 6-digit OTP generation, hashed in OTP_TOKEN table with 5-minute database expiry
+- VerifyOTPHandler: validates temp_token and 6-digit code, issues authenticated admin session
+- ResendOTPHandler: enforces strict 5-minute cooldown before regenerating verification codes
 
 ### fd.go (Dinisuru)
 - OpenFDHandler: creates new fixed deposit linked to savings account
@@ -68,8 +77,9 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 - ProcessTransaction: counter deposit/withdrawal for staff, uses DB triggers for balance calculations
 
 ### main.go (Arkeshan, Achira)
-- enableCORS: CORS middleware
-- main: db setup, route registration, sub-path dispatcher for /api/account/ routes, dev user seeding, starts server on :8080
+- enableCORS: CORS middleware with FRONTEND_URL cloud support
+- requireAdmin: role-guard middleware ensuring only active admin sessions can access management reports
+- main: db setup with dynamic TLS for cloud MySQL (Aiven), route registration, sub-path dispatcher for /api/account/ routes, dev user seeding, dynamic $PORT binding for Render deployment
 
 ## Running
 
