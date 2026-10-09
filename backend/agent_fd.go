@@ -40,13 +40,20 @@ func getStaffPersonID(r *http.Request, db *sql.DB) (int, error) {
 
 	var personID int
 	// Query the STAFF table directly using the username
-
 	err = db.QueryRowContext(r.Context(),
 		`select person_id from staff where username= ?`,
 		username).Scan(&personID)
 
 	if err != nil {
-		fmt.Println("DEBUG getStaffPersonID err:", err, "username:", username)
+		// Fallback for admin user so administrators can test/originate FDs
+		var userType string
+		_ = db.QueryRowContext(r.Context(), `select type from user_account where username = ?`, username).Scan(&userType)
+		if userType == "admin" {
+			_ = db.QueryRowContext(r.Context(), `select person_id from staff order by person_id limit 1`).Scan(&personID)
+			if personID > 0 {
+				return personID, nil
+			}
+		}
 		return 0, errors.New("forbidden: agent access required")
 	}
 	return personID, nil
@@ -75,6 +82,7 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// 2. Validate input and ensure the investment amount is strictly positive
+		request.AccountNo = strings.TrimSpace(request.AccountNo)
 		if request.AccountNo == "" {
 			writeFDError(w, http.StatusBadRequest, "account_no is required")
 			return
@@ -84,7 +92,7 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		if request.Investment.LessThanOrEqual(decimal.Zero) {
-			writeFDError(w, http.StatusBadRequest, "investment amount must be  positive")
+			writeFDError(w, http.StatusBadRequest, "investment amount must be positive")
 			return
 		}
 
@@ -107,7 +115,7 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		//  Validate the requested term matches allowed fd_plan_ids
+		// Validate the requested term matches allowed fd_plan_ids
 		var termMonths int
 		if err := db.QueryRowContext(r.Context(),
 			`select term_months from fd_plan where fd_plan_id = ?`,
@@ -148,18 +156,6 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Agent originates FD -> create withdrawal txn
-
-		_, err = tx.ExecContext(r.Context(), `
-			INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after)
-			VALUES (?, ?, 'withdrawal', ?, 0.00)`,
-			request.AccountNo, agentPersonID, request.Investment)
-		if err != nil {
-			rollback()
-			writeFDError(w, http.StatusUnprocessableEntity, "could not reserve FD investment: "+err.Error())
-			return
-		}
-
 		today := time.Now().UTC().Truncate(24 * time.Hour)
 		nextPayout := today.AddDate(0, 0, 30)
 
@@ -173,6 +169,19 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		fdAccNo := fmt.Sprintf("FD%09d", nextSeq)
+
+		// Agent originates FD -> create withdrawal transaction with reference & remarks
+		refNo := fmt.Sprintf("FD-INIT-%s", fdAccNo)
+		remarks := fmt.Sprintf("Fixed Deposit Investment (%s)", fdAccNo)
+		_, err = tx.ExecContext(r.Context(), `
+			INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks)
+			VALUES (?, ?, 'withdrawal', ?, 0.00, ?, ?)`,
+			request.AccountNo, agentPersonID, request.Investment, refNo, remarks)
+		if err != nil {
+			rollback()
+			writeFDError(w, http.StatusUnprocessableEntity, "could not reserve FD investment: "+err.Error())
+			return
+		}
 
 		_, err = tx.ExecContext(r.Context(), `
 			insert into fixed_deposit
@@ -218,7 +227,7 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 
 // AgentCustomerSearchHandler handles customer searches for both:
 // 1. Savings Account Origination via NIC query param (?nic=<term>) -> delegates to SearchCustomerByNICHandler
-// 2. Fixed Deposit Origination via Username query param (?username=<term>) -> fetches customer info and eligible savings accounts
+// 2. Fixed Deposit Origination via Account Number (?account_no=<term>) or Username (?username=<term>)
 func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -234,15 +243,6 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// 2. Otherwise, check FD customer search by account_no
-		searchAccountNo := strings.TrimSpace(r.URL.Query().Get("account_no"))
-		if searchAccountNo == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "nic or account_no parameter is required"})
-			return
-		}
-
 		// Only agents can use this endpoint for FD origination
 		_, err := getStaffPersonID(r, db)
 		if err != nil {
@@ -252,60 +252,160 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Fetch customer basic info via account number
-		var personID int
-		var firstName, lastName, nic string
-		err = db.QueryRowContext(r.Context(), `
-			SELECT p.person_id, p.first_name, p.last_name, p.nic
-			FROM person p
-			JOIN account_holder ah ON p.person_id = ah.person_id
-			WHERE ah.account_no = ?`, searchAccountNo).Scan(&personID, &firstName, &lastName, &nic)
-		if err != nil {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "customer not found for this account"})
-			return
-		}
+		searchAccountNo := strings.TrimSpace(r.URL.Query().Get("account_no"))
+		searchUsername := strings.TrimSpace(r.URL.Query().Get("username"))
 
-		// Fetch eligible savings accounts (active, no existing FD)
 		type EligibleAccount struct {
 			AccountNo string  `json:"account_no"`
 			Balance   float64 `json:"balance"`
 		}
-		rows, err := db.QueryContext(r.Context(), `
-			select sa.account_no, sa.balance
-			from savings_account sa
-			join account_holder ah on ah.account_no = sa.account_no
-			where ah.person_id = ?
-			  and sa.status = 'active'
-			  and not exists (
-				  select 1 from fixed_deposit fd where fd.account_no = sa.account_no
-			  )`, personID)
 
-		if err != nil {
+		if searchAccountNo != "" {
+			// A. Verify savings account exists and is active
+			var saStatus string
+			err := db.QueryRowContext(r.Context(),
+				`SELECT status FROM savings_account WHERE account_no = ?`, searchAccountNo).Scan(&saStatus)
+			if errors.Is(err, sql.ErrNoRows) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Savings account %s not found", searchAccountNo)})
+				return
+			} else if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "could not verify account"})
+				return
+			}
+			if saStatus != "active" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{"error": fmt.Sprintf("Savings account %s is not active (status: %s)", searchAccountNo, saStatus)})
+				return
+			}
+
+			// B. Check if this specific savings account already has an active FD
+			var existingFD string
+			_ = db.QueryRowContext(r.Context(),
+				`SELECT fd_acc_no FROM fixed_deposit WHERE account_no = ?`, searchAccountNo).Scan(&existingFD)
+			if existingFD != "" {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusConflict)
+				json.NewEncoder(w).Encode(map[string]string{
+					"error": fmt.Sprintf("Account %s already has an active Fixed Deposit (%s). Each savings account is limited to one FD.", searchAccountNo, existingFD),
+				})
+				return
+			}
+
+			// C. Fetch customer basic info via account number
+			var personID int
+			var firstName, lastName, nic string
+			err = db.QueryRowContext(r.Context(), `
+				SELECT p.person_id, p.first_name, p.last_name, p.nic
+				FROM person p
+				JOIN account_holder ah ON p.person_id = ah.person_id
+				WHERE ah.account_no = ?
+				LIMIT 1`, searchAccountNo).Scan(&personID, &firstName, &lastName, &nic)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(map[string]string{"error": "customer not found for this account"})
+				return
+			}
+
+			// D. Fetch eligible savings accounts (active, no existing FD) for this person
+			rows, err := db.QueryContext(r.Context(), `
+				select sa.account_no, sa.balance
+				from savings_account sa
+				join account_holder ah on ah.account_no = sa.account_no
+				where ah.person_id = ?
+				  and sa.status = 'active'
+				  and not exists (
+					  select 1 from fixed_deposit fd where fd.account_no = sa.account_no
+				  )`, personID)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "could not fetch accounts"})
+				return
+			}
+			defer rows.Close()
+
+			accounts := make([]EligibleAccount, 0)
+			for rows.Next() {
+				var acc EligibleAccount
+				if err := rows.Scan(&acc.AccountNo, &acc.Balance); err == nil {
+					accounts = append(accounts, acc)
+				}
+			}
+
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "could not fetch accounts"})
+			json.NewEncoder(w).Encode(map[string]any{
+				"person_id":  personID,
+				"first_name": firstName,
+				"last_name":  lastName,
+				"nic":        nic,
+				"account_no": searchAccountNo,
+				"accounts":   accounts,
+			})
+			return
+
+		} else if searchUsername != "" {
+			// Username search backward compatibility
+			var personID int
+			var firstName, lastName, nic string
+			err := db.QueryRowContext(r.Context(), `
+				select p.person_id, p.first_name, p.last_name, p.nic
+				from customer c
+				join person p on p.person_id = c.person_id
+				where c.username = ?`, searchUsername).Scan(&personID, &firstName, &lastName, &nic)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(map[string]string{"error": "customer not found"})
+				return
+			}
+
+			rows, err := db.QueryContext(r.Context(), `
+				select sa.account_no, sa.balance
+				from savings_account sa
+				join account_holder ah on ah.account_no = sa.account_no
+				where ah.person_id = ?
+				  and sa.status = 'active'
+				  and not exists (
+					  select 1 from fixed_deposit fd where fd.account_no = sa.account_no
+				  )`, personID)
+			if err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "could not fetch accounts"})
+				return
+			}
+			defer rows.Close()
+
+			accounts := make([]EligibleAccount, 0)
+			for rows.Next() {
+				var acc EligibleAccount
+				if err := rows.Scan(&acc.AccountNo, &acc.Balance); err == nil {
+					accounts = append(accounts, acc)
+				}
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(map[string]any{
+				"person_id":  personID,
+				"first_name": firstName,
+				"last_name":  lastName,
+				"nic":        nic,
+				"username":   searchUsername,
+				"accounts":   accounts,
+			})
+			return
+
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "nic, account_no, or username parameter is required"})
 			return
 		}
-		defer rows.Close()
-
-		accounts := make([]EligibleAccount, 0)
-		for rows.Next() {
-			var acc EligibleAccount
-			if err := rows.Scan(&acc.AccountNo, &acc.Balance); err == nil {
-				accounts = append(accounts, acc)
-			}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{
-			"person_id":  personID,
-			"first_name": firstName,
-			"last_name":  lastName,
-			"nic":        nic,
-			"account_no": searchAccountNo,
-			"accounts":   accounts,
-		})
 	}
 }

@@ -38,43 +38,51 @@ export default function AgentNewFDPage() {
     e.preventDefault();
     setSearchError("");
     setCustomer(null);
+    setEligibleAccounts([]);
+    setSelectedAccount("");
+    setSubmitResult(null);
+
+    const formattedAcc = searchAccountNo.trim().toUpperCase();
+    if (formattedAcc.length !== 12) {
+      setSearchError("Savings account number must be exactly 12 characters (e.g. ACC000000011)");
+      return;
+    }
 
     try {
       // Get the agent's token to authenticate the request
       const token = localStorage.getItem("session_id") || "";
 
-      //  Fetch customer details
-      const customerRes = await fetch(`/api/agent/customer/search?account_no=${searchAccountNo}`, {
+      // Fetch customer details
+      const customerRes = await fetch(`/api/agent/customer/search?account_no=${encodeURIComponent(formattedAcc)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!customerRes.ok) {
-        throw new Error("Customer not found for this account number");
+        const errData = await customerRes.json().catch(() => null);
+        throw new Error(errData?.error || "Customer not found for this account number");
       }
 
       const customerData = await customerRes.json();
       setCustomer(customerData);
 
-      // Extract the accounts returned by the single API call
-      const accountsData = customerData.accounts || [];
+      // Extract the accounts returned by the search API
+      const accountsData: SavingsAccount[] = customerData.accounts || [];
       setEligibleAccounts(accountsData);
 
-      // Automatically select the first account in the dropdown if available
+      // Automatically select the searched account if eligible, otherwise first available
       if (accountsData.length > 0) {
-        setSelectedAccount(accountsData[0].account_no);
+        const match = accountsData.find((a) => a.account_no === formattedAcc);
+        setSelectedAccount(match ? match.account_no : accountsData[0].account_no);
       }
     } catch (err: any) {
       setSearchError(err.message || "Failed to find customer");
     }
-
   };
-
 
   const handleOpenFD = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setSubmitResult(null);
-
 
     if (!selectedAccount) {
       setSubmitResult({ ok: false, msg: "Please select a savings account." });
@@ -97,7 +105,6 @@ export default function AgentNewFDPage() {
         }),
       });
       if (!res.ok) {
-
         const errData = await res.json().catch(() => null);
         throw new Error(errData?.error || "Failed to open Fixed Deposit");
       }
@@ -108,14 +115,20 @@ export default function AgentNewFDPage() {
         msg: `Success! Created FD Account: ${data.fd_acc_no}`
       });
 
-      // Clear the investment field so  don't accidentally submit twice
+      // Clear the investment field so don't accidentally submit twice
       setInvestment("");
+
+      // Remove the successfully bound savings account from the eligible list
+      setEligibleAccounts((prev) => {
+        const remaining = prev.filter((acc) => acc.account_no !== selectedAccount);
+        setSelectedAccount(remaining.length > 0 ? remaining[0].account_no : "");
+        return remaining;
+      });
     } catch (err: any) {
       setSubmitResult({ ok: false, msg: err.message });
     } finally {
-
       setSubmitting(false);
-    };
+    }
   };
 
   return (
@@ -143,23 +156,28 @@ export default function AgentNewFDPage() {
         <div className="rounded-xl border border-gray-200 bg-[#F3F4F6] p-6 shadow-sm">
           <h2 className="text-base font-bold text-[#001F3F] mb-4">Find Customer</h2>
 
-          <form onSubmit={handleSearchCustomer} className="flex gap-3">
+          <form onSubmit={handleSearchCustomer} className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <Search size={18} className="text-gray-400" />
               </div>
               <input
                 type="text"
-                placeholder="Enter Savings Account Number..."
+                maxLength={12}
+                placeholder="Enter 12-char Savings Account No (e.g. ACC000000011)..."
                 value={searchAccountNo}
-                onChange={(e) => setSearchAccountNo(e.target.value)}
+                onChange={(e) => setSearchAccountNo(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 12))}
                 required
-                className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-3 text-sm focus:border-[#06B6D4] focus:outline-none"
+                className="block w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-16 text-sm font-mono focus:border-[#06B6D4] focus:outline-none uppercase"
               />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono font-medium text-gray-400">
+                {searchAccountNo.length}/12
+              </span>
             </div>
             <button
               type="submit"
-              className="rounded-lg bg-[#001F3F] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#001F3F]/90"
+              disabled={searchAccountNo.trim().length !== 12}
+              className="rounded-lg bg-[#001F3F] px-5 py-2 text-sm font-bold text-white transition hover:bg-[#001F3F]/90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Search
             </button>
