@@ -84,6 +84,15 @@ export default function LoginPage() {
         body: JSON.stringify({ username, password }),
       });
 
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          res.status === 404
+            ? "API route not found. Please verify BACKEND_URL in Vercel settings and redeploy."
+            : `Backend server error (${res.status}). The cloud backend service may still be waking up. Please wait 30 seconds and try again.`
+        );
+      }
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -136,6 +145,11 @@ export default function LoginPage() {
         credentials: "include",
         body: JSON.stringify({ temp_token: tempToken, otp }),
       });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(`Verification service returned unexpected response (${res.status}). Please try again.`);
+      }
 
       const data = await res.json();
 
