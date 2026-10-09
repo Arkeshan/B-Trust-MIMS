@@ -186,3 +186,28 @@ func TestOpenAccount_InsufficientDepositRejected(t *testing.T) {
 		t.Fatalf("Expected status 400 for deposit < min_balance, got %d. Body: %s", rr.Code, rr.Body.String())
 	}
 }
+
+func TestAgentCustomerSearchHandler_UnifiedNIC(t *testing.T) {
+	db := getTestDB(t)
+	defer db.Close()
+
+	// Calling the main unified search route /api/agent/customer/search with ?nic=1980
+	req := httptest.NewRequest("GET", "/api/agent/customer/search?nic=1980", nil)
+	rr := httptest.NewRecorder()
+
+	handler := AgentCustomerSearchHandler(db)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("Expected status 200, got %d. Body: %s", rr.Code, rr.Body.String())
+	}
+
+	var results []CustomerSearchResult
+	if err := json.NewDecoder(rr.Body).Decode(&results); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if len(results) == 0 {
+		t.Fatalf("Expected at least 1 customer result for NIC prefix 1980")
+	}
+}

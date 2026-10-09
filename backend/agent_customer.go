@@ -35,15 +35,6 @@ type RegisterCustomerResponse struct {
 
 func RegisterCustomerHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
 		if r.Method != http.MethodPost {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -135,14 +126,22 @@ func RegisterCustomerHandler(db *sql.DB) http.HandlerFunc {
 
 		// Identify active Agent and Branch
 		var agentPersonID, branchID int
-		// Check session token from cookie
-		if cookie, err := r.Cookie("session_id"); err == nil && cookie.Value != "" {
+		var sessionToken string
+		authHeader := r.Header.Get("Authorization")
+		if strings.HasPrefix(authHeader, "Bearer ") {
+			sessionToken = strings.TrimPrefix(authHeader, "Bearer ")
+		} else if authHeader != "" {
+			sessionToken = authHeader
+		} else if cookie, err := r.Cookie("session_id"); err == nil && cookie.Value != "" {
+			sessionToken = cookie.Value
+		}
+
+		if sessionToken != "" {
 			_ = db.QueryRowContext(r.Context(), `
 				SELECT s.person_id, s.branch_id 
 				FROM USER_SESSION us 
-				JOIN USER_ACCOUNT ua ON us.username = ua.username 
-				JOIN STAFF s ON ua.username = s.username 
-				WHERE us.session_id = ? AND us.expires_at > NOW()`, cookie.Value).Scan(&agentPersonID, &branchID)
+				JOIN STAFF s ON us.username = s.username 
+				WHERE us.session_id = ? AND us.expires_at > NOW()`, sessionToken).Scan(&agentPersonID, &branchID)
 		}
 
 		// Fallback for development if not logged in via session

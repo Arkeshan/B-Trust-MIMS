@@ -81,8 +81,10 @@ export default function OpenSavingsAccountPage() {
   useEffect(() => {
     async function loadPlans() {
       try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("session_id") || "" : "";
         const res = await fetch("/api/agent/plans", {
           credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (res.ok) {
           const data: AccountPlan[] = await res.json();
@@ -116,9 +118,13 @@ export default function OpenSavingsAccountPage() {
     setIsSearching(true);
     const timer = setTimeout(async () => {
       try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("session_id") || "" : "";
         const res = await fetch(
           `/api/agent/customer/search?nic=${encodeURIComponent(term)}`,
-          { credentials: "include" }
+          {
+            credentials: "include",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
         );
         if (res.ok) {
           const results: CustomerSearchResult[] = await res.json();
@@ -215,10 +221,14 @@ export default function OpenSavingsAccountPage() {
     try {
       setStep("processing");
 
+      const token = typeof window !== "undefined" ? localStorage.getItem("session_id") || "" : "";
       const [res] = await Promise.all([
         fetch("/api/agent/account/open", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
           credentials: "include",
           body: JSON.stringify({
             plan_id: selectedPlanId,

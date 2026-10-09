@@ -216,8 +216,9 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 	}
 }
 
-// AgentCustomerSearchHandler handles
-
+// AgentCustomerSearchHandler handles customer searches for both:
+// 1. Savings Account Origination via NIC query param (?nic=<term>) -> delegates to SearchCustomerByNICHandler
+// 2. Fixed Deposit Origination via Username query param (?username=<term>) -> fetches customer info and eligible savings accounts
 func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -227,20 +228,27 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// Only agents can use this endpoint
+		// 1. If 'nic' parameter is present, dispatch to guardian-aware NIC search
+		if r.URL.Query().Has("nic") {
+			SearchCustomerByNICHandler(db)(w, r)
+			return
+		}
+
+		// 2. Otherwise, check FD customer search by username
+		searchUsername := strings.TrimSpace(r.URL.Query().Get("username"))
+		if searchUsername == "" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "nic or username parameter is required"})
+			return
+		}
+
+		// Only agents can use this endpoint for FD origination
 		_, err := getStaffPersonID(r, db)
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			json.NewEncoder(w).Encode(map[string]string{"error": "forbidden: agent access required"})
-			return
-		}
-
-		searchUsername := strings.TrimSpace(r.URL.Query().Get("username"))
-		if searchUsername == "" {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "username  is required"})
 			return
 		}
 

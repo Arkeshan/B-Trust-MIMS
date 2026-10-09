@@ -333,14 +333,13 @@ func LogoutHandler(db *sql.DB) http.HandlerFunc {
 func GetStaffPersonID(r *http.Request, db *sql.DB) (int, error) {
 	var sessionID string
 
-	cookie, err := r.Cookie("session_id")
-	if err == nil {
+	authHeader := r.Header.Get("Authorization")
+	if strings.HasPrefix(authHeader, "Bearer ") {
+		sessionID = strings.TrimPrefix(authHeader, "Bearer ")
+	} else if authHeader != "" {
+		sessionID = authHeader
+	} else if cookie, err := r.Cookie("session_id"); err == nil && cookie.Value != "" {
 		sessionID = cookie.Value
-	} else {
-		authHeader := r.Header.Get("Authorization")
-		if len(authHeader) > 7 && authHeader[:7] == "Bearer " {
-			sessionID = authHeader[7:]
-		}
 	}
 
 	if sessionID == "" {
@@ -350,13 +349,12 @@ func GetStaffPersonID(r *http.Request, db *sql.DB) (int, error) {
 	query := `
 		SELECT s.person_id 
 		FROM USER_SESSION us 
-		JOIN USER_ACCOUNT ua ON us.username = ua.username 
-		JOIN STAFF s ON ua.username = s.username 
+		JOIN STAFF s ON us.username = s.username 
 		WHERE us.session_id = ? AND us.expires_at > NOW()
 	`
 
 	var personID int
-	err = db.QueryRowContext(r.Context(), query, sessionID).Scan(&personID)
+	err := db.QueryRowContext(r.Context(), query, sessionID).Scan(&personID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, errors.New("unauthorized: invalid or expired session")

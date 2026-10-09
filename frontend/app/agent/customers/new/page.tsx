@@ -99,12 +99,14 @@ export default function NewCustomerPage() {
     setLoading(true);
 
     try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("session_id") || "" : "";
       const res = await fetch(
         "/api/agent/customer/register",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           credentials: "include",
           body: JSON.stringify({
