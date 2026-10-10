@@ -30,33 +30,27 @@ type OpenFDResponse struct {
 	Message        string          `json:"message"`
 }
 
-// getStaffPersonID -the authenticated username to a staff person_id.
-
+// getStaffPersonID resolves the authenticated agent's staff person_id using the centralized GetStaffPersonID from auth.go.
 func getStaffPersonID(r *http.Request, db *sql.DB) (int, error) {
-	username, err := getAuthenticatedUser(r, db)
-	if err != nil || username == "" {
-		return 0, errors.New("unauthorized")
+	personID, err := GetStaffPersonID(r, db)
+	if err == nil && personID > 0 {
+		return personID, nil
 	}
 
-	var personID int
-	// Query the STAFF table directly using the username
-	err = db.QueryRowContext(r.Context(),
-		`select person_id from staff where username= ?`,
-		username).Scan(&personID)
-
-	if err != nil {
-		// Fallback for admin user so administrators can test/originate FDs
+	// Fallback for admin user so administrators can test/originate FDs
+	username, authErr := getAuthenticatedUser(r, db)
+	if authErr == nil && username != "" {
 		var userType string
-		_ = db.QueryRowContext(r.Context(), `select type from user_account where username = ?`, username).Scan(&userType)
-		if userType == "admin" {
-			_ = db.QueryRowContext(r.Context(), `select person_id from staff order by person_id limit 1`).Scan(&personID)
+		_ = db.QueryRowContext(r.Context(), `SELECT type FROM USER_ACCOUNT WHERE username = ?`, username).Scan(&userType)
+		if strings.ToLower(userType) == "admin" {
+			_ = db.QueryRowContext(r.Context(), `SELECT person_id FROM STAFF ORDER BY person_id LIMIT 1`).Scan(&personID)
 			if personID > 0 {
 				return personID, nil
 			}
 		}
-		return 0, errors.New("forbidden: agent access required")
 	}
-	return personID, nil
+
+	return 0, errors.New("forbidden: agent access required")
 }
 
 // AgentOpenFDHandler handles POST /api/fd/open for agents.
@@ -99,7 +93,7 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 		// Verify the savings account exists and is active
 		var accountStatus string
 		err = db.QueryRowContext(r.Context(),
-			`select status from savings_account where account_no = ?`,
+			`SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ?`,
 			request.AccountNo,
 		).Scan(&accountStatus)
 		if errors.Is(err, sql.ErrNoRows) {
@@ -118,7 +112,7 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 		// Validate the requested term matches allowed fd_plan_ids
 		var termMonths int
 		if err := db.QueryRowContext(r.Context(),
-			`select term_months from fd_plan where fd_plan_id = ?`,
+			`SELECT term_months FROM FD_PLAN WHERE fd_plan_id = ?`,
 			request.FDPlanID,
 		).Scan(&termMonths); errors.Is(err, sql.ErrNoRows) {
 			writeFDError(w, http.StatusBadRequest, "invalid fd_plan_id: plan does not exist")
@@ -140,10 +134,10 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 
 		var balance, minimumBalance decimal.Decimal
 		err = tx.QueryRowContext(r.Context(), `
-			select balance, min_balance
-			from savings_account join account_plan on account_plan.plan_id = savings_account.plan_id
-			where account_no = ?
-			for update`, request.AccountNo).Scan(&balance, &minimumBalance)
+			SELECT balance, min_balance
+			FROM SAVINGS_ACCOUNT sa JOIN ACCOUNT_PLAN ap ON ap.plan_id = sa.plan_id
+			WHERE sa.account_no = ?
+			FOR UPDATE`, request.AccountNo).Scan(&balance, &minimumBalance)
 		if err != nil {
 			rollback()
 			writeFDError(w, http.StatusInternalServerError, "could not lock savings account")
@@ -161,8 +155,8 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 
 		var nextSeq int64
 		if err := tx.QueryRowContext(r.Context(),
-			`select coalesce(max(cast(substring(fd_acc_no, 3) as unsigned)), 0) + 1
-			 from fixed_deposit`,
+			`SELECT COALESCE(MAX(CAST(SUBSTRING(fd_acc_no, 3) AS UNSIGNED)), 0) + 1
+			 FROM FIXED_DEPOSIT`,
 		).Scan(&nextSeq); err != nil {
 			rollback()
 			writeFDError(w, http.StatusInternalServerError, "could not generate FD number")
@@ -184,10 +178,10 @@ func AgentOpenFDHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		_, err = tx.ExecContext(r.Context(), `
-			insert into fixed_deposit
+			INSERT INTO FIXED_DEPOSIT
 				(fd_acc_no, account_no, fd_plan_id, investment,
 				 start_date, interest_paid_to_date, next_payout_date)
-			values (?, ?, ?, ?, ?, 0.00, ?)`,
+			VALUES (?, ?, ?, ?, ?, 0.00, ?)`,
 			fdAccNo,
 			request.AccountNo,
 			request.FDPlanID,
@@ -264,7 +258,7 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			// A. Verify savings account exists and is active
 			var saStatus string
 			err := db.QueryRowContext(r.Context(),
-				`SELECT status FROM savings_account WHERE account_no = ?`, searchAccountNo).Scan(&saStatus)
+				`SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ?`, searchAccountNo).Scan(&saStatus)
 			if errors.Is(err, sql.ErrNoRows) {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
@@ -286,7 +280,7 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			// B. Check if this specific savings account already has an active FD
 			var existingFD string
 			_ = db.QueryRowContext(r.Context(),
-				`SELECT fd_acc_no FROM fixed_deposit WHERE account_no = ?`, searchAccountNo).Scan(&existingFD)
+				`SELECT fd_acc_no FROM FIXED_DEPOSIT WHERE account_no = ?`, searchAccountNo).Scan(&existingFD)
 			if existingFD != "" {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusConflict)
@@ -301,8 +295,8 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			var firstName, lastName, nic string
 			err = db.QueryRowContext(r.Context(), `
 				SELECT p.person_id, p.first_name, p.last_name, p.nic
-				FROM person p
-				JOIN account_holder ah ON p.person_id = ah.person_id
+				FROM PERSON p
+				JOIN ACCOUNT_HOLDER ah ON p.person_id = ah.person_id
 				WHERE ah.account_no = ?
 				LIMIT 1`, searchAccountNo).Scan(&personID, &firstName, &lastName, &nic)
 			if err != nil {
@@ -314,13 +308,13 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 
 			// D. Fetch eligible savings accounts (active, no existing FD) for this person
 			rows, err := db.QueryContext(r.Context(), `
-				select sa.account_no, sa.balance
-				from savings_account sa
-				join account_holder ah on ah.account_no = sa.account_no
-				where ah.person_id = ?
-				  and sa.status = 'active'
-				  and not exists (
-					  select 1 from fixed_deposit fd where fd.account_no = sa.account_no
+				SELECT sa.account_no, sa.balance
+				FROM SAVINGS_ACCOUNT sa
+				JOIN ACCOUNT_HOLDER ah ON ah.account_no = sa.account_no
+				WHERE ah.person_id = ?
+				  AND sa.status = 'active'
+				  AND NOT EXISTS (
+					  SELECT 1 FROM FIXED_DEPOSIT fd WHERE fd.account_no = sa.account_no
 				  )`, personID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
@@ -354,10 +348,10 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			var personID int
 			var firstName, lastName, nic string
 			err := db.QueryRowContext(r.Context(), `
-				select p.person_id, p.first_name, p.last_name, p.nic
-				from customer c
-				join person p on p.person_id = c.person_id
-				where c.username = ?`, searchUsername).Scan(&personID, &firstName, &lastName, &nic)
+				SELECT p.person_id, p.first_name, p.last_name, p.nic
+				FROM CUSTOMER c
+				JOIN PERSON p ON p.person_id = c.person_id
+				WHERE c.username = ?`, searchUsername).Scan(&personID, &firstName, &lastName, &nic)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
@@ -366,13 +360,13 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			}
 
 			rows, err := db.QueryContext(r.Context(), `
-				select sa.account_no, sa.balance
-				from savings_account sa
-				join account_holder ah on ah.account_no = sa.account_no
-				where ah.person_id = ?
-				  and sa.status = 'active'
-				  and not exists (
-					  select 1 from fixed_deposit fd where fd.account_no = sa.account_no
+				SELECT sa.account_no, sa.balance
+				FROM SAVINGS_ACCOUNT sa
+				JOIN ACCOUNT_HOLDER ah ON ah.account_no = sa.account_no
+				WHERE ah.person_id = ?
+				  AND sa.status = 'active'
+				  AND NOT EXISTS (
+					  SELECT 1 FROM FIXED_DEPOSIT fd WHERE fd.account_no = sa.account_no
 				  )`, personID)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
