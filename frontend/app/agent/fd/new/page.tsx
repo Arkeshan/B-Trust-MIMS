@@ -10,6 +10,7 @@ interface CustomerInfo {
   first_name: string;
   last_name: string;
   nic: string;
+  plan_name?: string;
 }
 
 interface SavingsAccount {
@@ -190,11 +191,16 @@ export default function AgentNewFDPage() {
           {customer && (
             <div className="mt-4 rounded-lg bg-emerald-50 border border-emerald-200 p-4">
               <p className="text-sm text-emerald-800">
-                Found Customer: <strong>{customer.first_name} {customer.last_name}</strong>
+                Customer Name: <strong>{customer.first_name} {customer.last_name}</strong>
               </p>
               <p className="text-sm text-emerald-800 mt-1">
                 NIC No: <strong>{customer.nic}</strong>
               </p>
+              {customer.plan_name && (
+                <p className="text-sm text-emerald-800 mt-1">
+                  Account Plan: <strong>{customer.plan_name}</strong>
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -250,8 +256,8 @@ export default function AgentNewFDPage() {
                       type="button"
                       onClick={() => setPlanId(plan.id)}
                       className={`rounded-lg border p-3 text-center transition cursor-pointer ${planId === plan.id
-                          ? "border-[#06B6D4] bg-white text-[#001F3F] shadow-sm ring-1 ring-[#06B6D4]"
-                          : "border-gray-200 bg-transparent text-[#6B7280] hover:bg-white/50"
+                        ? "border-[#06B6D4] bg-white text-[#001F3F] shadow-sm ring-1 ring-[#06B6D4]"
+                        : "border-gray-200 bg-transparent text-[#6B7280] hover:bg-white/50"
                         }`}
                     >
                       <p className="text-sm font-bold">{plan.label}</p>
