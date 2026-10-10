@@ -14,7 +14,7 @@ INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status, last_log
     ('agent_ark', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'ark@btrust.lk', 'staff', 'active', NULL),
     ('agent_dinisiru', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'dinisiru@btrust.lk', 'staff', 'active', NULL),
     ('agent_nethmi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'nethmi@btrust.lk', 'staff', 'active', NULL),
-    ('agent_vimukthi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'vimukthi@btrust.lk', 'staff', 'active', NULL),
+    ('agent_vimukthi', '$2a$10$31hBXzQB.tCQSWjkThEKeul56WfT9ITyP595f3LXuh1WlIYOHD3JS', 'vimukthi@btrust.lk', 'staff', 'active', NULL);
     
 
 -- 3. Create 5 Agent Personal Profiles

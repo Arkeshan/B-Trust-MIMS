@@ -33,9 +33,8 @@ export default function ActiveFD({ fdAccNo }: ActiveFDProps) {
                 setLoading(true);
                 setError(null);
 
-                const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
                 const sessionId = localStorage.getItem("session_id") || "";
-                const res = await fetch(`${baseUrl}/api/fd/status/${encodeURIComponent(fdAccNo)}`, {
+                const res = await fetch(`/api/fd/status/${encodeURIComponent(fdAccNo)}`, {
                   headers: { Authorization: `Bearer ${sessionId}` },
                   credentials: "include"
                 });
