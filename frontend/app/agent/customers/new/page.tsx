@@ -2,6 +2,8 @@
 
 import { useState, useId, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, UserPlus, CheckCircle2, AlertCircle, ShieldAlert } from "lucide-react";
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -99,36 +101,31 @@ export default function NewCustomerPage() {
     setLoading(true);
 
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("session_id") || "" : "";
-      const res = await fetch(
-        "/api/agent/customer/register",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            first_name: firstName,
-            last_name: lastName,
-            nic: nic.trim(),
-            dob,
-            phone_number: phone.trim(),
-            address,
-            city,
-            username: username.trim(),
-            password,
-            email: email.trim(),
-            guardian_nic: guardianNic.trim(),
-          }),
-        },
-      );
+      const payload = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        nic: nic.trim() || undefined,
+        dob: dob,
+        phone_number: phone.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        username: username.trim(),
+        password: password,
+        email: email.trim() || `${username.trim()}@btrust.local`,
+        guardian_nic: age !== null && age < 18 ? guardianNic.trim() : undefined,
+      };
+
+      const res = await fetch("/api/agent/customer/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Customer registration failed.");
+        throw new Error(data.error || "Failed to register customer identity.");
       }
 
       setRegisteredData({
@@ -147,41 +144,60 @@ export default function NewCustomerPage() {
   const isMinor = age !== null && age < 18;
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-8 border-b border-slate-800 pb-5">
-          <p className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
-            Agent Portal • KYC Phase 1
-          </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-white">
-            Register Customer Identity
-          </h1>
-          <p className="mt-2 text-sm text-slate-400">
-            Create a standalone verified customer identity record in the bank.
-            Bank accounts can be opened immediately or at a later stage.
-          </p>
+    <div className="text-[#000000] font-sans pb-12">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Brand Header */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/agent/portfolio"
+            className="rounded-lg border border-gray-200 bg-white p-2 text-[#001F3F] hover:bg-gray-100 transition shadow-xs"
+            title="Back to Portfolio"
+          >
+            <ArrowLeft size={18} />
+          </Link>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-[#06B6D4]">
+                Agent Portal • KYC Onboarding
+              </span>
+            </div>
+            <h1 className="text-3xl font-bold text-[#001F3F] tracking-tight">
+              Register Customer Identity
+            </h1>
+            <p className="text-xs text-[#6B7280] mt-0.5">
+              Create a verified customer identity in B-Trust. Accounts and Fixed Deposits can be opened once registered.
+            </p>
+          </div>
         </div>
 
+        {/* Error Alert */}
         {error && (
-          <div className="mb-6 rounded-lg border border-red-500/40 bg-red-950/50 p-4 text-sm text-red-200">
-            <span className="font-semibold">Registration Error: </span>
-            {error}
+          <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 shadow-xs animate-shake">
+            <AlertCircle className="text-rose-600 shrink-0 mt-0.5" size={18} />
+            <div className="flex-1">
+              <p className="font-bold text-rose-950">Registration Alert</p>
+              <p className="mt-0.5 text-xs text-rose-800">{error}</p>
+            </div>
           </div>
         )}
 
+        {/* KYC Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {/* LEFT COLUMN: Personal Info */}
-            <div className="space-y-5 rounded-xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm">
-              <h2 className="border-b border-slate-800 pb-3 text-lg font-semibold text-cyan-300">
-                1. Personal Details
-              </h2>
+            {/* LEFT COLUMN: Personal Details */}
+            <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 sm:p-7 shadow-sm">
+              <div className="border-b border-gray-100 pb-3">
+                <h2 className="text-base font-bold text-[#001F3F]">
+                  1. Personal Details
+                </h2>
+                <p className="text-xs text-[#6B7280]">Legal identity and contact information</p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label
                     htmlFor={firstNameId}
-                    className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                   >
                     First Name *
                   </label>
@@ -192,13 +208,13 @@ export default function NewCustomerPage() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     placeholder="e.g. Kasun"
-                    className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                    className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor={lastNameId}
-                    className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                   >
                     Last Name *
                   </label>
@@ -209,7 +225,7 @@ export default function NewCustomerPage() {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="e.g. Silva"
-                    className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                    className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                   />
                 </div>
               </div>
@@ -218,7 +234,7 @@ export default function NewCustomerPage() {
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor={dobId}
-                    className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                   >
                     Date of Birth *
                   </label>
@@ -226,11 +242,11 @@ export default function NewCustomerPage() {
                     <span
                       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         isMinor
-                          ? "bg-amber-900/50 text-amber-300 border border-amber-600/40"
-                          : "bg-emerald-900/50 text-emerald-300 border border-emerald-600/40"
+                          ? "bg-amber-50 text-amber-800 border border-amber-200"
+                          : "bg-emerald-50 text-emerald-800 border border-emerald-200"
                       }`}
                     >
-                      {age} years old ({isMinor ? "Minor" : "Adult"})
+                      {age} yrs ({isMinor ? "Minor" : "Adult"})
                     </span>
                   )}
                 </div>
@@ -240,14 +256,14 @@ export default function NewCustomerPage() {
                   required
                   value={dob}
                   onChange={(e) => handleDobChange(e.target.value)}
-                  className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor={nicId}
-                  className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
                   National Identity Card (NIC) {isMinor ? "(Optional for Minor)" : "*"}
                 </label>
@@ -257,15 +273,15 @@ export default function NewCustomerPage() {
                   required={!isMinor}
                   value={nic}
                   onChange={(e) => setNic(e.target.value)}
-                  placeholder={isMinor ? "Nullable for minors" : "e.g. 199012345678"}
-                  className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                  placeholder={isMinor ? "Not required for minors" : "e.g. 199012345678"}
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor={phoneId}
-                  className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
                   Phone Number (10 Digits) *
                 </label>
@@ -279,7 +295,7 @@ export default function NewCustomerPage() {
                     setPhone(e.target.value.replace(/[^0-9]/g, ""))
                   }
                   placeholder="0771234567"
-                  className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20 font-mono"
                 />
               </div>
 
@@ -287,7 +303,7 @@ export default function NewCustomerPage() {
                 <div className="col-span-2">
                   <label
                     htmlFor={addressId}
-                    className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                   >
                     Street Address *
                   </label>
@@ -298,13 +314,13 @@ export default function NewCustomerPage() {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="e.g. 12 Temple Rd"
-                    className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                    className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor={cityId}
-                    className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                    className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                   >
                     City *
                   </label>
@@ -314,23 +330,26 @@ export default function NewCustomerPage() {
                     required
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    placeholder="e.g. Trinco"
-                    className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                    placeholder="e.g. Colombo"
+                    className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                   />
                 </div>
               </div>
             </div>
 
             {/* RIGHT COLUMN: Account & Guardian */}
-            <div className="space-y-5 rounded-xl border border-slate-800 bg-slate-900/60 p-6 backdrop-blur-sm">
-              <h2 className="border-b border-slate-800 pb-3 text-lg font-semibold text-cyan-300">
-                2. User Account & Guardian
-              </h2>
+            <div className="space-y-5 rounded-2xl border border-gray-200 bg-white p-6 sm:p-7 shadow-sm">
+              <div className="border-b border-gray-100 pb-3">
+                <h2 className="text-base font-bold text-[#001F3F]">
+                  2. User Account & Guardian
+                </h2>
+                <p className="text-xs text-[#6B7280]">Online portal credentials and minor guardianship</p>
+              </div>
 
               <div>
                 <label
                   htmlFor={usernameId}
-                  className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
                   Portal Username *
                 </label>
@@ -341,14 +360,14 @@ export default function NewCustomerPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="e.g. kasun_silva"
-                  className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20 font-mono"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor={passwordId}
-                  className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
                   Temporary Portal Password *
                 </label>
@@ -359,14 +378,14 @@ export default function NewCustomerPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor={emailId}
-                  className="block text-xs font-medium uppercase tracking-wider text-slate-300"
+                  className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
                   Email Address (Optional)
                 </label>
@@ -376,23 +395,24 @@ export default function NewCustomerPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="e.g. kasun@example.com"
-                  className="mt-1.5 block w-full rounded-lg border border-slate-700 bg-slate-800/90 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 sm:text-sm"
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                 />
               </div>
 
+              {/* Minor Guardian Panel */}
               {isMinor && (
-                <div className="rounded-lg border border-amber-600/40 bg-amber-950/20 p-4 space-y-2">
+                <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 space-y-2.5 animate-fade-in">
                   <div className="flex items-center gap-2">
-                    <span className="flex h-2 w-2 rounded-full bg-amber-400"></span>
+                    <ShieldAlert size={16} className="text-amber-600" />
                     <label
                       htmlFor={guardianNicId}
-                      className="block text-xs font-semibold uppercase tracking-wider text-amber-300"
+                      className="block text-xs font-bold uppercase tracking-wider text-amber-900"
                     >
                       Guardian NIC * (Required for Minors)
                     </label>
                   </div>
-                  <p className="text-xs text-amber-200/80">
-                    The customer is under 18. A parent or legal guardian already registered in the bank must be linked.
+                  <p className="text-xs text-amber-800 leading-relaxed">
+                    Customer is under 18. A parent or legal guardian already registered in the bank must be linked.
                   </p>
                   <input
                     id={guardianNicId}
@@ -401,70 +421,60 @@ export default function NewCustomerPage() {
                     value={guardianNic}
                     onChange={(e) => setGuardianNic(e.target.value)}
                     placeholder="Enter Guardian's registered NIC"
-                    className="block w-full rounded-lg border border-amber-500/50 bg-slate-900 px-3.5 py-2 text-slate-100 placeholder-slate-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 sm:text-sm"
+                    className="block w-full rounded-xl border border-amber-300 bg-white px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
                   />
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="rounded-lg bg-cyan-500 px-8 py-3 text-sm font-semibold text-slate-950 shadow-lg transition-all hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:ring-offset-2 focus:ring-offset-slate-950 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#001F3F] hover:bg-[#002D5B] px-8 py-3.5 text-sm font-bold text-white shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#06B6D4] disabled:opacity-50"
             >
-              {loading ? "Registering Identity..." : "Verify & Register Identity"}
+              <UserPlus size={18} />
+              {loading ? "Registering Identity..." : "Verify & Register Customer"}
             </button>
           </div>
         </form>
       </div>
 
+      {/* Success Modal */}
       {registeredData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 shadow-2xl animate-fade-in">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400">
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600">
+                <CheckCircle2 size={24} />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-white">
+                <h3 className="text-xl font-bold text-[#001F3F]">
                   Identity Registered!
                 </h3>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#6B7280]">
                   Customer successfully added to B-Trust
                 </p>
               </div>
             </div>
 
-            <div className="my-5 rounded-lg border border-slate-800 bg-slate-950/70 p-4 space-y-2 text-sm">
+            <div className="my-5 rounded-xl border border-gray-100 bg-[#F9FAFB] p-4 space-y-2.5 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-400">Name:</span>
-                <span className="font-semibold text-slate-200">
+                <span className="text-[#6B7280]">Full Name:</span>
+                <span className="font-bold text-[#001F3F]">
                   {registeredData.first_name} {registeredData.last_name}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Username:</span>
-                <span className="font-mono text-cyan-400">
+                <span className="text-[#6B7280]">Portal Username:</span>
+                <span className="font-mono font-semibold text-[#06B6D4]">
                   {registeredData.username}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-400">Person ID:</span>
-                <span className="font-mono font-bold text-emerald-400">
+                <span className="text-[#6B7280]">Customer ID:</span>
+                <span className="font-mono font-bold text-emerald-700">
                   #{registeredData.person_id}
                 </span>
               </div>
@@ -473,24 +483,24 @@ export default function NewCustomerPage() {
             <div className="space-y-2.5">
               <button
                 type="button"
-                onClick={handleReset}
-                className="w-full rounded-lg bg-cyan-500 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400"
-              >
-                Register Another Identity
-              </button>
-              <button
-                type="button"
                 onClick={() => router.push("/agent/accounts/new")}
-                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-700 hover:text-white"
+                className="w-full rounded-xl bg-[#001F3F] hover:bg-[#002D5B] px-4 py-3 text-sm font-bold text-white transition shadow-sm"
               >
-                Open Account
+                Open Savings Account
               </button>
               <button
                 type="button"
-                onClick={() => router.push("/agent/dashboard")}
-                className="w-full rounded-lg border border-transparent px-4 py-2 text-sm font-medium text-slate-400 transition hover:text-slate-200"
+                onClick={handleReset}
+                className="w-full rounded-xl border border-gray-200 bg-white hover:bg-gray-50 px-4 py-2.5 text-sm font-semibold text-[#001F3F] transition"
               >
-                Return to Dashboard
+                Register Another Customer
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/agent/portfolio")}
+                className="w-full rounded-xl px-4 py-2 text-xs font-semibold text-[#6B7280] hover:text-[#001F3F] transition"
+              >
+                Return to Portfolio
               </button>
             </div>
           </div>
