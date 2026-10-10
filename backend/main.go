@@ -176,6 +176,7 @@ func main() {
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
 	http.HandleFunc("/api/customer/agent", enableCORS(CustomerAgentInfoHandler(db)))
+	http.HandleFunc("/api/customer/profile", enableCORS(CustomerProfileHandler(db)))
 
 	// Customer Portal Routes — dispatch account sub-paths
 	http.HandleFunc("/api/account/", enableCORS(func(w http.ResponseWriter, r *http.Request) {

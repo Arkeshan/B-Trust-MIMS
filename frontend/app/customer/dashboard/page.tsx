@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowUpRight, LogOut } from "lucide-react";
@@ -8,6 +8,29 @@ import { ArrowUpRight, LogOut } from "lucide-react";
 export default function CustomerDashboard() {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [customerName, setCustomerName] = useState("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const sessionId = localStorage.getItem("session_id") || "";
+        const res = await fetch("/api/customer/profile", {
+          headers: {
+            Authorization: `Bearer ${sessionId}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCustomerName(`${data.first_name} ${data.last_name}`.trim());
+        } else {
+          setCustomerName(localStorage.getItem("username") || "");
+        }
+      } catch (err) {
+        setCustomerName(localStorage.getItem("username") || "");
+      }
+    };
+    fetchProfile();
+  }, []);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -42,14 +65,17 @@ export default function CustomerDashboard() {
               Customer Dashboard
             </h1>
           </div>
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-[#001F3F] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
-          >
-            <LogOut size={16} />
-            {loggingOut ? "Logging out..." : "Logout"}
-          </button>
+          <div className="flex items-center gap-4">
+            <span className="text-gray-600">Welcome, {customerName}</span>
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-[#001F3F] transition hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+            >
+              <LogOut size={16} />
+              {loggingOut ? "Logging out..." : "Logout"}
+            </button>
+          </div>
         </div>
       </header>
 
