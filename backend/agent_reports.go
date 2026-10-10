@@ -61,7 +61,7 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 
 		// Fetch customers assigned to this agent with their accounts and FD info
 		rows, err := db.QueryContext(r.Context(), `
-			select
+			SELECT
 				p.person_id,
 				p.first_name,
 				p.last_name,
@@ -71,14 +71,13 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 				sa.balance,
 				fd.fd_acc_no,
 				fd.investment
-				
-			from customer c
-			join person p on p.person_id = c.person_id
-			join account_holder ah on ah.person_id = c.person_id
-			join savings_account sa on sa.account_no = ah.account_no
-			left join fixed_deposit fd on fd.account_no = sa.account_no
-			where c.assigned_agent_person_id = ?
-			order by p.person_id, sa.account_no`,
+			FROM CUSTOMER c
+			JOIN PERSON p ON p.person_id = c.person_id
+			JOIN ACCOUNT_HOLDER ah ON ah.person_id = c.person_id
+			JOIN SAVINGS_ACCOUNT sa ON sa.account_no = ah.account_no
+			LEFT JOIN FIXED_DEPOSIT fd ON fd.account_no = sa.account_no
+			WHERE c.assigned_agent_person_id = ?
+			ORDER BY p.person_id, sa.account_no`,
 			agentPersonID,
 		)
 		if err != nil {
@@ -166,11 +165,11 @@ func AgentLedgerHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		rows, err := db.QueryContext(r.Context(), `
-			select txn_id, txn_type, amount, timestamp, reference_no
-			from transaction
-			where staff_person_id = ?
-			  and timestamp >= date_sub(now(), interval 30 day)
-			order by timestamp desc`,
+			SELECT txn_id, txn_type, amount, timestamp, reference_no
+			FROM TRANSACTION
+			WHERE staff_person_id = ?
+			  AND timestamp >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+			ORDER BY timestamp DESC`,
 			agentPersonID,
 		)
 		if err != nil {
