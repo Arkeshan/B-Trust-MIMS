@@ -40,7 +40,7 @@ export default function SavingsHistory({ accountId }: { accountId: string }) {
     fetchHistory();
   }, [accountId]); // Automatically runs when accountId changes
 
-  if (loading) return <div className="p-4 text-gray-500">Loading history...</div>;
+  if (loading) return <div className="p-4 flex items-center text-gray-500"><span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2"></span>Loading history...</div>;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md border border-gray-100 mt-6">

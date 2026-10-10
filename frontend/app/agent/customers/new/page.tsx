@@ -3,7 +3,13 @@
 import { useState, useId, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, UserPlus, CheckCircle2, AlertCircle, ShieldAlert } from "lucide-react";
+import {
+  ArrowLeft,
+  UserPlus,
+  CheckCircle2,
+  AlertCircle,
+  ShieldAlert,
+} from "lucide-react";
 
 export default function NewCustomerPage() {
   const router = useRouter();
@@ -165,7 +171,8 @@ export default function NewCustomerPage() {
               Register Customer Identity
             </h1>
             <p className="text-xs text-[#6B7280] mt-0.5">
-              Create a verified customer identity in B-Trust. Accounts and Fixed Deposits can be opened once registered.
+              Create a verified customer identity in B-Trust. Accounts and Fixed
+              Deposits can be opened once registered.
             </p>
           </div>
         </div>
@@ -190,7 +197,9 @@ export default function NewCustomerPage() {
                 <h2 className="text-base font-bold text-[#001F3F]">
                   1. Personal Details
                 </h2>
-                <p className="text-xs text-[#6B7280]">Legal identity and contact information</p>
+                <p className="text-xs text-[#6B7280]">
+                  Legal identity and contact information
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -265,7 +274,9 @@ export default function NewCustomerPage() {
                   htmlFor={nicId}
                   className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
-                  National Identity Card (NIC) {isMinor ? "(Optional for Minor)" : "*"}
+                  {isMinor
+                    ? "Guardian's National Identity Card *"
+                    : "National Identity Card *"}
                 </label>
                 <input
                   id={nicId}
@@ -273,7 +284,9 @@ export default function NewCustomerPage() {
                   required={!isMinor}
                   value={nic}
                   onChange={(e) => setNic(e.target.value)}
-                  placeholder={isMinor ? "Not required for minors" : "e.g. 199012345678"}
+                  placeholder={
+                    isMinor ? "Not required for minors" : "e.g. 199012345678"
+                  }
                   className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                 />
               </div>
@@ -283,7 +296,7 @@ export default function NewCustomerPage() {
                   htmlFor={phoneId}
                   className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
-                  Phone Number (10 Digits) *
+                  Phone Number *
                 </label>
                 <input
                   id={phoneId}
@@ -343,7 +356,9 @@ export default function NewCustomerPage() {
                 <h2 className="text-base font-bold text-[#001F3F]">
                   2. User Account & Guardian
                 </h2>
-                <p className="text-xs text-[#6B7280]">Online portal credentials and minor guardianship</p>
+                <p className="text-xs text-[#6B7280]">
+                  Online portal credentials and minor guardianship
+                </p>
               </div>
 
               <div>
@@ -387,7 +402,7 @@ export default function NewCustomerPage() {
                   htmlFor={emailId}
                   className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
-                  Email Address (Optional)
+                  Email Address
                 </label>
                 <input
                   id={emailId}
@@ -412,7 +427,8 @@ export default function NewCustomerPage() {
                     </label>
                   </div>
                   <p className="text-xs text-amber-800 leading-relaxed">
-                    Customer is under 18. A parent or legal guardian already registered in the bank must be linked.
+                    Customer is under 18. A parent or legal guardian already
+                    registered in the bank must be linked.
                   </p>
                   <input
                     id={guardianNicId}
@@ -435,7 +451,9 @@ export default function NewCustomerPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-[#001F3F] hover:bg-[#002D5B] px-8 py-3.5 text-sm font-bold text-white shadow-md hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-[#06B6D4] disabled:opacity-50"
             >
               <UserPlus size={18} />
-              {loading ? "Registering Identity..." : "Verify & Register Customer"}
+              {loading
+                ? "Registering Identity..."
+                : "Verify & Register Customer"}
             </button>
           </div>
         </form>

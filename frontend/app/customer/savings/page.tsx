@@ -176,7 +176,8 @@ export default function SavingsAccountPage() {
         )}
 
         {loading && !activeAccount && (
-          <div className="text-center py-12 text-sm text-[#6B7280]">
+          <div className="text-center py-12 text-sm text-[#6B7280] flex items-center justify-center">
+            <span className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin mr-2"></span>
             Loading your account...
           </div>
         )}

@@ -168,12 +168,14 @@ func main() {
 	http.HandleFunc("/api/agent/lookup", enableCORS(AgentCustomerLookupHandler(db)))
 	http.HandleFunc("/api/auth/login", enableCORS(LoginHandler(db)))
 	http.HandleFunc("/api/auth/logout", enableCORS(LogoutHandler(db)))
+	http.HandleFunc("/api/auth/password/change", enableCORS(ChangePasswordHandler(db)))
 	http.HandleFunc("/api/auth/otp/verify", enableCORS(VerifyOTPHandler(db)))
 	http.HandleFunc("/api/auth/otp/resend", enableCORS(ResendOTPHandler(db)))
 
 	http.HandleFunc("/api/customer/accounts", enableCORS(CustomerAccountsHandler(db)))
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
+	http.HandleFunc("/api/customer/agent", enableCORS(CustomerAgentInfoHandler(db)))
 
 	// Customer Portal Routes — dispatch account sub-paths
 	http.HandleFunc("/api/account/", enableCORS(func(w http.ResponseWriter, r *http.Request) {
@@ -192,6 +194,7 @@ func main() {
 	http.HandleFunc("/api/agent/stats", enableCORS(AgentStatsHandler(db)))
 	http.HandleFunc("/api/agent/customers", enableCORS(AgentCustomersHandler(db)))
 	http.HandleFunc("/api/agent/ledger", enableCORS(AgentLedgerHandler(db)))
+	http.HandleFunc("/api/agent/profile", enableCORS(AgentProfileHandler(db)))
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -299,7 +299,7 @@ export default function LoginPage() {
                 disabled={loading}
                 className="flex w-full items-center justify-center rounded-lg bg-[#001F3F] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#001F3F]/90 disabled:opacity-50 cursor-pointer"
               >
-                {loading ? "Signing in..." : "Sign in"}
+                {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Signing in...</> : "Sign in"}
               </button>
             </form>
           ) : (
@@ -337,7 +337,7 @@ export default function LoginPage() {
                 disabled={loading || otp.length !== 6}
                 className="flex w-full items-center justify-center rounded-lg bg-[#001F3F] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#001F3F]/90 disabled:opacity-50 cursor-pointer"
               >
-                {loading ? "Verifying..." : "Verify & Sign In"}
+                {loading ? <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>Verifying...</> : "Verify & Sign In"}
               </button>
 
               <div className="flex items-center justify-between pt-2 border-t border-gray-200 text-xs">
