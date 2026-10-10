@@ -252,6 +252,7 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 		type EligibleAccount struct {
 			AccountNo string  `json:"account_no"`
 			Balance   float64 `json:"balance"`
+			PlanName  string  `json:"plan_name"`
 		}
 
 		if searchAccountNo != "" {
@@ -292,13 +293,18 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 
 			// C. Fetch customer basic info via account number
 			var personID int
-			var firstName, lastName, nic string
+			var firstName, lastName, planName string
+			var nic sql.NullString
 			err = db.QueryRowContext(r.Context(), `
-				SELECT p.person_id, p.first_name, p.last_name, p.nic
+				SELECT p.person_id, p.first_name, p.last_name, COALESCE(p.nic, g.nic) AS effective_nic, ap.plan_name
 				FROM PERSON p
 				JOIN ACCOUNT_HOLDER ah ON p.person_id = ah.person_id
+				LEFT JOIN CUSTOMER c ON p.person_id = c.person_id
+				LEFT JOIN PERSON g ON c.guardian_person_id = g.person_id
+				JOIN SAVINGS_ACCOUNT sa ON ah.account_no = sa.account_no
+				JOIN ACCOUNT_PLAN ap ON sa.plan_id = ap.plan_id
 				WHERE ah.account_no = ?
-				LIMIT 1`, searchAccountNo).Scan(&personID, &firstName, &lastName, &nic)
+				LIMIT 1`, searchAccountNo).Scan(&personID, &firstName, &lastName, &nic, &planName)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusNotFound)
@@ -308,9 +314,10 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 
 			// D. Fetch eligible savings accounts (active, no existing FD) for this person
 			rows, err := db.QueryContext(r.Context(), `
-				SELECT sa.account_no, sa.balance
+				SELECT sa.account_no, sa.balance, ap.plan_name
 				FROM SAVINGS_ACCOUNT sa
 				JOIN ACCOUNT_HOLDER ah ON ah.account_no = sa.account_no
+				JOIN ACCOUNT_PLAN ap ON sa.plan_id = ap.plan_id
 				WHERE ah.person_id = ?
 				  AND sa.status = 'active'
 				  AND NOT EXISTS (
@@ -327,7 +334,7 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			accounts := make([]EligibleAccount, 0)
 			for rows.Next() {
 				var acc EligibleAccount
-				if err := rows.Scan(&acc.AccountNo, &acc.Balance); err == nil {
+				if err := rows.Scan(&acc.AccountNo, &acc.Balance, &acc.PlanName); err == nil {
 					accounts = append(accounts, acc)
 				}
 			}
@@ -337,7 +344,8 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 				"person_id":  personID,
 				"first_name": firstName,
 				"last_name":  lastName,
-				"nic":        nic,
+				"nic":        nic.String,
+				"plan_name":  planName,
 				"account_no": searchAccountNo,
 				"accounts":   accounts,
 			})
@@ -346,11 +354,13 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 		} else if searchUsername != "" {
 			// Username search backward compatibility
 			var personID int
-			var firstName, lastName, nic string
+			var firstName, lastName string
+			var nic sql.NullString
 			err := db.QueryRowContext(r.Context(), `
-				SELECT p.person_id, p.first_name, p.last_name, p.nic
+				SELECT p.person_id, p.first_name, p.last_name, COALESCE(p.nic, g.nic) AS effective_nic
 				FROM CUSTOMER c
 				JOIN PERSON p ON p.person_id = c.person_id
+				LEFT JOIN PERSON g ON c.guardian_person_id = g.person_id
 				WHERE c.username = ?`, searchUsername).Scan(&personID, &firstName, &lastName, &nic)
 			if err != nil {
 				w.Header().Set("Content-Type", "application/json")
@@ -360,9 +370,10 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			}
 
 			rows, err := db.QueryContext(r.Context(), `
-				SELECT sa.account_no, sa.balance
+				SELECT sa.account_no, sa.balance, ap.plan_name
 				FROM SAVINGS_ACCOUNT sa
 				JOIN ACCOUNT_HOLDER ah ON ah.account_no = sa.account_no
+				JOIN ACCOUNT_PLAN ap ON sa.plan_id = ap.plan_id
 				WHERE ah.person_id = ?
 				  AND sa.status = 'active'
 				  AND NOT EXISTS (
@@ -389,7 +400,7 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 				"person_id":  personID,
 				"first_name": firstName,
 				"last_name":  lastName,
-				"nic":        nic,
+				"nic":        nic.String,
 				"username":   searchUsername,
 				"accounts":   accounts,
 			})
