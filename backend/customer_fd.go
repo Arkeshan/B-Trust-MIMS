@@ -165,7 +165,7 @@ type FDStatus struct {
 	InterestRate          decimal.Decimal `json:"interest_rate"`
 	TermMonths            int             `json:"term_months"`
 	InterestPaidToDate    decimal.Decimal `json:"interest_paid_to_date"`
-	CurrentEarnedInterest decimal.Decimal `json:"current_interest"`
+	CurrentEarnedInterest decimal.Decimal `json:"current_earned_interest"`
 	NextPayoutDate        time.Time       `json:"next_payout_date"`
 }
 
