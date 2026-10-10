@@ -280,6 +280,7 @@ export default function AgentTransferPage() {
                     <input
                       ref={searchInputRef}
                       type="text"
+                      maxLength={12}
                       placeholder="Type account number "
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
