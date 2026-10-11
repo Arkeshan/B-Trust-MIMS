@@ -11,6 +11,7 @@
 ---
 
 ## Table of Contents
+0. [Academic Alignment: Course Syllabus (Modules 1–12) & TA Evaluation Criteria](#0-academic-alignment-course-syllabus-modules-112--ta-evaluation-criteria)
 1. [Executive Overview & Elevator Pitch](#1-executive-overview--elevator-pitch)
 2. [Architectural Foundations: The "Why" Behind the Design](#2-architectural-foundations-the-why-behind-the-design)
    - [Why the 3-Folder Architecture?](#21-why-the-3-folder-architecture)
@@ -63,6 +64,40 @@
     - [Category F: DevOps, Cloud Hosting & Troubleshooting (Q51–Q55)](#category-f-devops-cloud-hosting--troubleshooting)
     - [Category G: Examiner "Trap" & Pressure Questions (Q56–Q60)](#category-g-examiner-trap--pressure-questions)
 12. [Viva Day Tactical Advice & Technical Vocabulary](#12-viva-day-tactical-advice--technical-vocabulary)
+
+---
+
+## 0. Academic Alignment: Course Syllabus (Modules 1–12) & TA Evaluation Criteria
+
+### 0.1 Meeting the Teaching Assistants' Expectations
+Based on the instructional team's explicit guidance, the viva defense will be evaluated on the following priorities:
+1. **Primary Focus on Database Design:** Evaluators will examine if the relational schema is normalized, if constraints prevent bad states, and if business requirements are fulfilled.
+2. **Bonus Marks for Advanced Database Features:**
+   - **Database Triggers:** Authored `before_transaction_insert` (row-level, ECA model, raises custom `SQLSTATE '45000'` exceptions, halts invalid writes, and mutates balances atomically).
+   - **Stored Procedures & Cursors:** Partnered on `ProcessFDInterest()` in `database/procedures.sql` using procedural cursor loops for term payouts.
+   - **Database Indexing:** Secondary B+ Tree indexes on high-frequency lookup keys in `database/indexes.sql` to avoid sequential full-table scans.
+   - **Database Views:** Reporting and security views (`vw_agent_transaction_summary`, `vw_fd_status`, `vw_recent_txn`) for row-level access control.
+   - **Scheduled Events:** Automated monthly interest execution via MySQL Event Scheduler (`monthly_fd_interest_event`).
+3. **Bonus Marks for Implementation & Architecture:**
+   - Enterprise UI/UX with real-time feedback, debounce searching, and printable transaction receipts.
+   - Admin Two-Factor Authentication (2FA) with CSPRNG OTP generation, database rate limiting, and firewall-resilient dual-channel email dispatch.
+   - Production Docker containerization and live hybrid cloud hosting (Vercel + Render + Aiven Cloud MySQL with TLS).
+4. **Individual Competency & Accountability:**
+   - Every member must articulate why technical choices were made and defend their code without appearing as a free rider.
+
+### 0.2 Arkeshan's Course Curriculum Alignment Matrix
+
+| Course Module | Syllabus Topic | Arkeshan's Project Implementation | Viva Defense Justification ("Why I did this") |
+| :--- | :--- | :--- | :--- |
+| **Module 1: Intro to DBMS** | 3-Tier Architecture, Physical/Logical Schema, DBMS Storage Engine | Separated system into Presentation (Next.js), Application (Go REST API), and Data (MySQL 8.0 InnoDB). Docker containerization. | *"A 3-tier architecture achieves physical data independence: the database storage and indexing can be altered without breaking the client."* |
+| **Module 2: Intro to SQL** | Data Definition (DDL), Data Types, Precision, Constraints | Schema tables: `SAVINGS_ACCOUNT`, `ACCOUNT_HOLDER`, `TRANSACTION`. Strict types: `DECIMAL(15,2)`, `ENUM`, `TIMESTAMP`. | *"We rejected IEEE-754 `FLOAT`/`DOUBLE` to prevent floating-point rounding errors in monetary sums; strictly used `DECIMAL(15,2)`."* |
+| **Module 3: Intermediate SQL** | Transactions, ACID Guarantees, Foreign Key Constraints, Joins | Multi-table atomic transactions (`tx.Begin()`, `tx.Commit()`, `tx.Rollback()`). Dual-entry bookkeeping in transfers. | *"Fund transfers and account origination require all-or-nothing execution; if any step breaches constraints, the entire transaction rolls back."* |
+| **Module 4: Advanced SQL** | Triggers (ECA Model), SQL Injection Prevention, Prepared Statements | Authored `before_transaction_insert` trigger with `SIGNAL SQLSTATE '45000'`. 100% Prepared Statements (`?` parameterization). | *"Triggers enforce business invariants at the lowest storage level, ensuring rules cannot be bypassed by buggy backend code or direct SQL access."* |
+| **Module 5: ER Modeling** | $1:1$, $1:N$, $M:N$ Cardinalities, Junction Entities, Specialization | Modeled `ACCOUNT_HOLDER(person_id, account_no)` as an associative junction table with composite PK. Specialization of `PERSON`. | *"Joint accounts and multi-account holders form an $M:N$ relationship; resolving this via a junction table is the textbook relational approach."* |
+| **Module 6 & 7: Normalization** | 1NF, 2NF, 3NF, BCNF, Functional Dependencies, Lossless Joins | Normalized tables to 3NF. Separated `ACCOUNT_PLAN` from `SAVINGS_ACCOUNT` to eliminate transitive dependencies ($account \rightarrow plan \rightarrow rate$). | *"Keeping interest rates inside `ACCOUNT_PLAN` rather than duplicating them on every account record prevents update anomalies when rates change."* |
+| **Module 8: Application Design** | MVC Pattern, Application Security, Connection Pooling | Go REST API with connection pooling (`db.SetMaxOpenConns`). Admin 2FA with CSPRNG tokens and database rate limiting. | *"Application tier acts as a gatekeeper, sanitizing requests before they reach the database and validating user sessions against `USER_SESSION`."* |
+| **Module 9: File Org & Indexing** | Clustered vs Secondary Indexes, B+ Trees, Slotted Pages | Primary key clustered indexes on account tables; assisted teammates with secondary B+ Tree indexes on foreign keys. | *"InnoDB stores table rows in clustered B+ tree leaf nodes ordered by Primary Key; foreign key lookups use secondary index pointers."* |
+| **Module 12: NoSQL vs RDBMS** | ACID vs BASE, CAP Theorem (Consistency vs Availability) | Explicitly chose Relational MySQL over NoSQL (MongoDB/Cassandra). | *"Banking ledgers require strong consistency and immediate isolation (ACID/CA). BASE eventual consistency allows double-spending and cannot be used for core banking."* |
 
 ---
 
