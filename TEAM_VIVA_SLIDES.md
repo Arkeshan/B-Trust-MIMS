@@ -190,3 +190,4 @@
 - **Expected TA Questions & Answers:**
   - **Q: Why create separate views for reports instead of querying the raw tables directly in the backend?**
     - **A:** *"Encapsulating complex analytical aggregations in database views simplifies application code, allows the MySQL query optimizer to cache and reuse execution plans, and enables strict role-based access control where managers can read summary metrics without accessing sensitive row-level personal data."*
+

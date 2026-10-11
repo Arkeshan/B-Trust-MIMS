@@ -14,48 +14,54 @@
 0. [Academic Alignment: Course Syllabus (Modules 1–12) & TA Evaluation Criteria](#0-academic-alignment-course-syllabus-modules-112--ta-evaluation-criteria)
 1. [Executive Overview & Elevator Pitch](#1-executive-overview--elevator-pitch)
 2. [Architectural Foundations: The "Why" Behind the Design](#2-architectural-foundations-the-why-behind-the-design)
-   - [Why the 3-Folder Architecture?](#21-why-the-3-folder-architecture)
-   - [End-to-End Request Flow & Communication Topology](#22-end-to-end-request-flow--communication-topology)
-   - [Database-as-Code vs ORMs](#23-database-as-code-vs-orms)
+   - [2.1 Why the 3-Folder Architecture?](#21-why-the-3-folder-architecture)
+   - [2.2 End-to-End Request Flow & Communication Topology](#22-end-to-end-request-flow--communication-topology)
+   - [2.3 Database-as-Code vs ORMs](#23-database-as-code-vs-orms)
+   - [2.4 Arbitrary-Precision Financial Math (`shopspring/decimal` vs IEEE 754 `float64`)](#24-arbitrary-precision-financial-math-shopspringdecimal-vs-ieee-754-float64)
 3. [Arkeshan's Git Commit Timeline & Engineering History](#3-arkeshans-git-commit-timeline--engineering-history)
-4. [Deep-Dive Module 1: Account Origination & Association (The Hardest Module)](#4-deep-dive-module-1-account-origination--association)
-   - [Problem Statement & Business Requirements](#41-problem-statement--business-requirements)
-   - [Guardian-Aware Search Logic (UNION SQL Query)](#42-guardian-aware-search-logic)
-   - [Age Rules & Leap-Year Arithmetic](#43-age-rules--leap-year-arithmetic)
-   - [The Multi-Table Atomic Transaction & Trigger Synergy](#44-the-multi-table-atomic-transaction--trigger-synergy)
-   - [Arbitrary Precision Math: Why `shopspring/decimal` Over `float64`?](#45-arbitrary-precision-math-why-shopspringdecimal-over-float64)
-   - [Full Source Code: `backend/agent_account.go`](#46-full-source-code-backendagent_accountgo)
-   - [Full Source Code: `frontend/app/agent/accounts/new/page.tsx`](#47-full-source-code-frontendappagentaccountsnewpagetsx)
-5. [Deep-Dive Module 2: Atomic Customer Fund Transfers](#5-deep-dive-module-2-atomic-customer-fund-transfers)
-   - [ACID Guarantee & Preventing Double-Spending](#51-acid-guarantee--preventing-double-spending)
-   - [Pessimistic Row Locking (`SELECT ... FOR UPDATE`)](#52-pessimistic-row-locking-select--for-update)
-   - [Dual-Entry Bookkeeping & Shared Reference Codes](#53-dual-entry-bookkeeping--shared-reference-codes)
-   - [Privacy-Preserving Account Lookup & Name Masking](#54-privacy-preserving-account-lookup--name-masking)
-   - [Full Source Code: `backend/transfer.go`](#55-full-source-code-backendtransfergo)
-   - [Full Source Code: `frontend/app/customer/transfer/page.tsx`](#56-full-source-code-frontendappcustomertransferpagetsx)
-6. [Deep-Dive Module 3: Teller Counter Transactions](#6-deep-dive-module-3-teller-counter-transactions)
-   - [Overdraft Prevention & Staff Audit Trails](#61-overdraft-prevention--staff-audit-trails)
-   - [Full Source Code: `backend/txn.go`](#62-full-source-code-backendtxngo)
+4. [Deep-Dive Module 1: Account Origination & Association Engine](#4-deep-dive-module-1-account-origination--association-engine)
+   - [4.1 Problem Statement, Regulatory Rules & Plan Matrix](#41-problem-statement-regulatory-rules--plan-matrix)
+   - [4.2 Guardian-Aware Search Architecture (SQL UNION Query)](#42-guardian-aware-search-architecture-sql-union-query)
+   - [4.3 Age Calculation & Leap-Year Day-of-Year Arithmetic](#43-age-calculation--leap-year-day-of-year-arithmetic)
+   - [4.4 Complete Step-by-Step Chronological Execution Workflow (Steps 1 to 14)](#44-complete-step-by-step-chronological-execution-workflow)
+   - [4.5 Full Source Code Walkthrough: `backend/agent_account.go`](#45-full-source-code-walkthrough-backendagent_accountgo)
+   - [4.6 Frontend Wizard Architecture: `frontend/app/agent/accounts/new/page.tsx`](#46-frontend-wizard-architecture-frontendappagentaccountsnewpagetsx)
+5. [Deep-Dive Module 2: Atomic Customer Fund Transfers Subsystem](#5-deep-dive-module-2-atomic-customer-fund-transfers-subsystem)
+   - [5.1 ACID Guarantees & Race Condition Elimination](#51-acid-guarantees--race-condition-elimination)
+   - [5.2 Pessimistic Row Locking (`SELECT ... FOR UPDATE`)](#52-pessimistic-row-locking-select--for-update)
+   - [5.3 Dual-Entry Ledger Bookkeeping & Shared Reference Codes](#53-dual-entry-ledger-bookkeeping--shared-reference-codes)
+   - [5.4 Privacy-Preserving Account Lookup & Name Masking (`maskName`)](#54-privacy-preserving-account-lookup--name-masking-maskname)
+   - [5.5 Complete Step-by-Step Chronological Execution Workflow (Steps 1 to 10)](#55-complete-step-by-step-chronological-execution-workflow)
+   - [5.6 Full Source Code Walkthrough: `backend/transfer.go`](#56-full-source-code-walkthrough-backendtransfergo)
+   - [5.7 Frontend Transfer Portal: `frontend/app/customer/transfer/page.tsx`](#57-frontend-transfer-portal-frontendappcustomertransferpagetsx)
+6. [Deep-Dive Module 3: Teller Counter Transactions Subsystem](#6-deep-dive-module-3-teller-counter-transactions-subsystem)
+   - [6.1 Teller Operations & Staff Audit Trail Security](#61-teller-operations--staff-audit-trail-security)
+   - [6.2 Overdraft Rejection & SQLSTATE 45000 Error Interception](#62-overdraft-rejection--sqlstate-45000-error-interception)
+   - [6.3 Complete Step-by-Step Chronological Execution Workflow (Steps 1 to 7)](#63-complete-step-by-step-chronological-execution-workflow)
+   - [6.4 Full Source Code Walkthrough: `backend/txn.go`](#64-full-source-code-walkthrough-backendtxngo)
 7. [Deep-Dive Module 4: Admin 2FA Two-Factor Authentication & Session Lifecycle](#7-deep-dive-module-4-admin-2fa-two-factor-authentication--session-lifecycle)
-   - [CSPRNG vs Pseudo-Random OTP Generation](#71-csprng-vs-pseudo-random-otp-generation)
-   - [5-Minute Database Rate Limiting & The Browser "Back Button" Loophole](#72-5-minute-database-rate-limiting--the-browser-back-button-loophole)
-   - [Dual-Channel Email Dispatch: HTTPS Resend API vs SMTP Port 587](#73-dual-channel-email-dispatch-https-resend-api-vs-smtp-port-587)
-   - [Triple-Tier Safe Logout Protocol](#74-triple-tier-safe-logout-protocol)
-   - [Full Source Code: `backend/otp.go`](#75-full-source-code-backendotpgo)
-   - [Full Source Code: `backend/auth.go`](#76-full-source-code-backendauthgo)
-8. [Deep-Dive Module 5: Today's Bug Fix & Route Unification](#8-deep-dive-module-5-todays-bug-fix--route-unification)
-   - [The Route Collision Problem (`/api/agent/customer/search`)](#81-the-route-collision-problem)
-   - [Unified Handler Architecture](#82-unified-handler-architecture)
-   - [Eliminating Localhost CORS Overrides for Cloud Portals](#83-eliminating-localhost-cors-overrides-for-cloud-portals)
-9. [Database Layer Deep Dive: Schema, Triggers, Constraints & Indexes](#9-database-layer-deep-dive)
-   - [The Core Trigger: `before_transaction_insert`](#91-the-core-trigger-before_transaction_insert)
-   - [Relational Normalization (3NF) & Schema Design](#92-relational-normalization-3nf--schema-design)
-   - [Indexing Strategy](#93-indexing-strategy)
+   - [7.1 CSPRNG vs Pseudo-Random OTP Generation (`crypto/rand` vs `math/rand`)](#71-csprng-vs-pseudo-random-otp-generation-cryptorand-vs-mathrand)
+   - [7.2 5-Minute Database Rate Limiting & Back-Button Loophole Prevention](#72-5-minute-database-rate-limiting--back-button-loophole-prevention)
+   - [7.3 Dual-Channel Email Dispatch: HTTPS Resend API (Port 443) vs SMTP (Port 587)](#73-dual-channel-email-dispatch-https-resend-api-port-443-vs-smtp-port-587)
+   - [7.4 Triple-Tier Safe Logout Protocol (DB, Cookie, Client Storage)](#74-triple-tier-safe-logout-protocol-db-cookie-client-storage)
+   - [7.5 Complete Step-by-Step Chronological Execution Workflow (Steps 1 to 9)](#75-complete-step-by-step-chronological-execution-workflow)
+   - [7.6 Full Source Code Walkthrough: `backend/otp.go` & `backend/auth.go`](#76-full-source-code-walkthrough-backendotpgo--backendauthgo)
+8. [Deep-Dive Module 5: Customer Search Route Unification & Cross-Origin Fixes](#8-deep-dive-module-5-customer-search-route-unification--cross-origin-fixes)
+   - [8.1 The Route Collision Problem (`/api/agent/customer/search`)](#81-the-route-collision-problem-apiagentcustomersearch)
+   - [8.2 Unified Query Parameter Multiplexing Architecture](#82-unified-query-parameter-multiplexing-architecture)
+   - [8.3 CORS Normalization & Eliminating Hardcoded Localhost Overrides](#83-cors-normalization--eliminating-hardcoded-localhost-overrides)
+   - [8.4 Complete Step-by-Step Execution Workflow (Steps 1 to 5)](#84-complete-step-by-step-execution-workflow)
+9. [Database Layer Deep Dive: Schema, Triggers, Constraints & Indexes](#9-database-layer-deep-dive-schema-triggers-constraints--indexes)
+   - [9.1 Relational Normalization: Third Normal Form (3NF) Justification](#91-relational-normalization-third-normal-form-3nf-justification)
+   - [9.2 Junction Table Modeling: Multi-Holder M:N Association](#92-junction-table-modeling-multi-holder-mn-association)
+   - [9.3 The Core Trigger: `before_transaction_insert` Internal Engine Lifecycle](#93-the-core-trigger-before_transaction_insert-internal-engine-lifecycle)
+   - [9.4 B+ Tree Indexing Strategy & Performance Optimization](#94-b-tree-indexing-strategy--performance-optimization)
 10. [Cloud Deployment & Production DevOps Architecture](#10-cloud-deployment--production-devops-architecture)
-    - [Next.js Reverse Proxy & Rewrite Architecture](#101-nextjs-reverse-proxy--rewrite-architecture)
-    - [Containerization with Multi-Stage Dockerfile](#102-containerization-with-multi-stage-dockerfile)
-    - [Aiven Cloud Managed MySQL with TLS](#103-aiven-cloud-managed-mysql-with-tls)
-11. [The Master Viva Defense Question Bank (60 Comprehensive Q&As)](#11-the-master-viva-defense-question-bank)
+    - [10.1 Hybrid Cloud Topology: Vercel + Render + Aiven Cloud MySQL](#101-hybrid-cloud-topology-vercel--render--aiven-cloud-mysql)
+    - [10.2 Next.js Server-Side Reverse Proxy (`next.config.ts`)](#102-nextjs-server-side-reverse-proxy-nextconfigts)
+    - [10.3 Multi-Stage Docker Build Pipeline (`backend/Dockerfile`)](#103-multi-stage-docker-build-pipeline-backenddockerfile)
+    - [10.4 Production TLS Encryption & Database Connection Pooling](#104-production-tls-encryption--database-connection-pooling)
+11. [The Master Viva Defense Question Bank (60 Comprehensive Q&As)](#11-the-master-viva-defense-question-bank-60-comprehensive-qas)
     - [Category A: Architecture & Structural Decisions (Q1–Q10)](#category-a-architecture--structural-decisions)
     - [Category B: Database, Triggers & ACID Transactions (Q11–Q22)](#category-b-database-triggers--acid-transactions)
     - [Category C: Golang Backend & Concurrency (Q23–Q32)](#category-c-golang-backend--concurrency)
@@ -71,11 +77,11 @@
 
 ### 0.1 Meeting the Teaching Assistants' Expectations
 Based on the instructional team's explicit guidance, the viva defense will be evaluated on the following priorities:
-1. **Primary Focus on Database Design:** Evaluators will examine if the relational schema is normalized, if constraints prevent bad states, and if business requirements are fulfilled.
+1. **Primary Focus on Database Design:** Evaluators will examine if the relational schema is normalized (3NF), if constraints prevent invalid states, and if domain banking invariants are preserved.
 2. **Bonus Marks for Advanced Database Features:**
-   - **Database Triggers:** Authored `before_transaction_insert` (row-level, ECA model, raises custom `SQLSTATE '45000'` exceptions, halts invalid writes, and mutates balances atomically).
+   - **Database Triggers:** Authored `before_transaction_insert` (row-level, Event-Condition-Action model, raises custom `SQLSTATE '45000'` exceptions, halts overdraft writes, and mutates balances atomically).
    - **Stored Procedures & Cursors:** Partnered on `ProcessFDInterest()` in `database/procedures.sql` using procedural cursor loops for term payouts.
-   - **Database Indexing:** Secondary B+ Tree indexes on high-frequency lookup keys in `database/indexes.sql` to avoid sequential full-table scans.
+   - **Database Indexing:** Secondary B+ Tree indexes on high-frequency foreign keys in `database/indexes.sql` to eliminate full-table scans (`COLLSCAN`).
    - **Database Views:** Reporting and security views (`vw_agent_transaction_summary`, `vw_fd_status`, `vw_recent_txn`) for row-level access control.
    - **Scheduled Events:** Automated monthly interest execution via MySQL Event Scheduler (`monthly_fd_interest_event`).
 3. **Bonus Marks for Implementation & Architecture:**
@@ -198,6 +204,25 @@ A common viva question is: *"Why did you write raw SQL instead of using an ORM l
 | **Financial Reliability** | Exact types (`DECIMAL(15,2)`) mapped directly to Go `shopspring/decimal`. | Silent float conversion bugs frequently introduced during ORM struct mapping. |
 | **Relational Integrity** | Foreign key cascades and check constraints explicitly defined in DDL scripts. | Often relies on application-level validations that fail during concurrent writes. |
 
+### 2.4 Arbitrary-Precision Financial Math (`shopspring/decimal` vs IEEE 754 `float64`)
+In standard computer architecture (IEEE 754 floating-point standard), binary fractions cannot accurately represent base-10 decimal fractions like `0.1` or `0.2`:
+```go
+var a float64 = 0.1
+var b float64 = 0.2
+fmt.Println(a + b) // Prints: 0.30000000000000004 !
+```
+In banking:
+- A rounding error of `$0.0000000000000004` multiplied across millions of transactions leads to ledger imbalances, reconciliation failures, and regulatory audits.
+- Arkeshan integrated `github.com/shopspring/decimal` across all backend handlers:
+```go
+type OpenAccountRequest struct {
+    PlanID         int             `json:"plan_id"`
+    PersonIDs      []int           `json:"person_ids"`
+    InitialDeposit decimal.Decimal `json:"initial_deposit"`
+}
+```
+`decimal.Decimal` stores numbers internally as arbitrary-precision big integers with an explicit scale exponent, ensuring exact calculations to the cent without floating-point drift.
+
 ---
 
 ## 3. Arkeshan's Git Commit Timeline & Engineering History
@@ -208,7 +233,7 @@ Every major technical milestone is backed by git commits authored by Arkeshan:
    - Implemented `generateSessionToken()`, `getAuthenticatedUser()`, and the initial ACID customer transfer handler.
    - Added `reference_no` and `remarks` schema migration to `TRANSACTION` table.
 2. **`4967297` & `e8e67d9` — Customer Transfer UI & Pagination:**
-   - Built the 3-row responsive transfer interface with real-time masked recipient account lookup.
+   - Built the responsive transfer interface with real-time masked recipient account lookup.
 3. **`5a52deb` & `f32b472` — Database Driver & Timezone Corrections:**
    - Configured `loc=Local` in the MySQL Data Source Name (DSN) to prevent timezone drift between Colombo time (UTC+5:30) and UTC servers.
    - Fixed `rows.Err()` checks across cursor iterations to prevent silent query truncation.
@@ -231,21 +256,25 @@ Every major technical milestone is backed by git commits authored by Arkeshan:
 
 ---
 
-## 4. Deep-Dive Module 1: Account Origination & Association
+## 4. Deep-Dive Module 1: Account Origination & Association Engine
 
-### 4.1 Problem Statement & Business Requirements
+### 4.1 Problem Statement, Regulatory Rules & Plan Matrix
 In microbanking, opening an account cannot be a simple database insert. It must adhere to strict regulatory, legal, and risk constraints:
 - **KYC Identity Association:** A customer identity must already exist in `PERSON` / `CUSTOMER`.
-- **Plan Eligibility by Age:**
-  - **Children (Plan 1):** Age < 12. Must have a registered guardian.
-  - **Teen (Plan 2):** Age 12 to 17.
-  - **Adult (Plan 3):** Age 18 to 59.
-  - **Senior (Plan 4):** Age 60+. (Higher interest tier).
-  - **Joint (Plan 5):** Exactly 2 to 4 distinct holders; **all holders must be aged 18 or older**.
+- **Plan Eligibility by Age & Holder Counts:**
+
+| Plan ID | Plan Name | Age Restrictions | Holder Cardinality | Minimum Balance Rule |
+| :---: | :---: | :---: | :---: | :---: |
+| **1** | **Children** | Age < 12 (must have guardian registered) | Exactly 1 holder | Initial deposit $\ge$ plan `min_balance` |
+| **2** | **Teen** | $12 \le \text{Age} \le 17$ | Exactly 1 holder | Initial deposit $\ge$ plan `min_balance` |
+| **3** | **Adult** | $18 \le \text{Age} \le 59$ | Exactly 1 holder | Initial deposit $\ge$ plan `min_balance` |
+| **4** | **Senior** | $\text{Age} \ge 60$ | Exactly 1 holder | Initial deposit $\ge$ plan `min_balance` |
+| **5** | **Joint** | **All** holders must be $\ge 18$ | **2 to 4 distinct holders** | Initial deposit $\ge$ plan `min_balance` |
+
 - **Mandatory Initial Deposit:** The account cannot be opened with a zero balance. The initial deposit must meet or exceed the selected plan's `min_balance`.
 - **Atomic Multi-Table Write:** Generating the account, binding account holders, and processing the initial deposit must succeed as a single atomic transaction or rollback completely.
 
-### 4.2 Guardian-Aware Search Logic (UNION SQL Query)
+### 4.2 Guardian-Aware Search Architecture (SQL UNION Query)
 When an agent searches for a minor (e.g., child aged 8) to open a Children's account, **the minor does not possess a National Identity Card (NIC)**. If the system only searched by `p.nic`, minors would never appear in search results!
 
 Arkeshan solved this with a SQL `UNION` query:
@@ -310,72 +339,281 @@ If today is March 10, 2026 and the customer was born on October 15, 2008:
 - `age--` &rarr; `age = 17`.
 - The customer is correctly flagged as a minor and prevented from opening an Adult account!
 
-### 4.4 The Multi-Table Atomic Transaction & Trigger Synergy
-The account origination process in `backend/agent_account.go` executes across three tables:
-1. `SAVINGS_ACCOUNT`: Created with `balance = 0.00`.
-2. `ACCOUNT_HOLDER`: Junction rows mapping each `person_id` to `account_no`.
-3. `TRANSACTION`: Initial deposit record inserted.
+---
+
+### 4.4 Complete Step-by-Step Chronological Execution Workflow
+Here is the exact sequential trace of execution when an agent originates an account in B-Trust MIMS:
 
 ```
-       [ Go Application ]                         [ MySQL Database ]
-              |                                            |
-              |--- 1. BeginTx() -------------------------->|
-              |--- 2. INSERT INTO SAVINGS_ACCOUNT -------->| (balance = 0.00)
-              |--- 3. INSERT INTO ACCOUNT_HOLDER(s) ------>| (junction rows)
-              |--- 4. INSERT INTO TRANSACTION ------------>|
-              |       (type='deposit', amount=5000.00)     |
-              |                                            |---> [ TRIGGER FIRES ]
-              |                                            |     before_transaction_insert:
-              |                                            |     checks min_balance,
-              |                                            |     updates SAVINGS_ACCOUNT.balance
-              |                                            |     (new balance = 5000.00)
-              |<-- 5. Trigger Success / Failure -----------|
-              |                                            |
-    [ If error / min_balance breached ]                    |
-              |--- 6. tx.Rollback() ---------------------->| (All rows reverted!)
-              |                                            |
-    [ If success ]                                         |
-              |--- 7. tx.Commit() ------------------------>| (Permanent write!)
-              v                                            v
+[Agent UI] ---> [Next.js Rewrite] ---> [Go Router] ---> [Validations] ---> [BeginTx] ---> [SQL Writes] ---> [Trigger] ---> [Commit] ---> [201 Created]
 ```
 
-### 4.5 Arbitrary Precision Math: Why `shopspring/decimal` Over `float64`?
-In standard computer architecture (IEEE 754 floating-point standard), binary fractions cannot accurately represent decimal fractions like `0.1` or `0.2`:
-```go
-var a float64 = 0.1
-var b float64 = 0.2
-fmt.Println(a + b) // Prints: 0.30000000000000004 !
-```
-In banking:
-- A rounding error of `$0.0000000000000004` multiplied across millions of transactions leads to ledger imbalances, reconciliation failures, and regulatory audits.
-- Arkeshan integrated `github.com/shopspring/decimal`:
-```go
-type OpenAccountRequest struct {
-    PlanID         int             `json:"plan_id"`
-    PersonIDs      []int           `json:"person_ids"`
-    InitialDeposit decimal.Decimal `json:"initial_deposit"`
-}
-```
-`decimal.Decimal` stores numbers internally as arbitrary-precision big integers with an explicit scale exponent, ensuring exact calculations to the cent.
+#### Step 1: Agent Searches Customer by NIC in Frontend
+- **Trigger:** Agent types `1980` in the search box on `frontend/app/agent/accounts/new/page.tsx`.
+- **Debouncing:** The React hook fires after a 300ms debounce to prevent flooding the server with keystrokes.
+- **Dispatch:** An HTTP `GET /api/agent/customer/search?nic=1980` is dispatched.
+
+#### Step 2: Next.js Reverse Proxy Interception
+- **Network Routing:** In `frontend/next.config.ts`, the rewrite rule intercepts `/api/:path*`.
+- **Destination:** Next.js proxies the call server-to-server to `https://btrust-backend.onrender.com/api/agent/customer/search?nic=1980`.
+- **Headers:** Automatically attaches the `Authorization: Bearer <session_id>` header and forwards cookies.
+
+#### Step 3: Go Multiplexer & CORS Verification
+- **Entrypoint:** In `backend/main.go`, the route matches `http.HandleFunc("/api/agent/customer/search", enableCORS(AgentCustomerSearchHandler(db)))`.
+- **CORS Check:** `enableCORS` inspects the `Origin` header. If it matches `https://btrust2.vercel.app`, it sets `Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials: true`.
+- **Route Delegation:** `AgentCustomerSearchHandler` detects `r.URL.Query().Has("nic")` and delegates to `SearchCustomerByNICHandler(db)`.
+
+#### Step 4: SQL UNION Query Execution on Database
+- **Execution:** Go executes the parameterized SQL query against Aiven MySQL using `db.QueryContext(r.Context(), query, nic, nic)`.
+- **Results:** Returns both direct holders (`Primary`) and minors registered under that guardian (`Dependent`).
+- **Response:** Serialized to JSON array (`CustomerSearchResult[]`) with HTTP 200 OK.
+- **UI State:** The agent selects the customer(s). For joint accounts, the agent adds up to 4 customers.
+
+#### Step 5: Form Submission & Payload Construction
+- **User Action:** Agent selects plan (e.g., Plan 3: Adult), enters Initial Deposit (e.g., `5000.00`), and clicks "Open Account".
+- **Payload:** Frontend packages:
+  ```json
+  {
+    "plan_id": 3,
+    "person_ids": [14],
+    "initial_deposit": 5000.00
+  }
+  ```
+- **Dispatch:** Sends `POST /api/agent/account/open` with `Content-Type: application/json`.
+
+#### Step 6: Go Input Decoding & Arbitrary-Precision Parsing
+- **Handler:** `OpenAccountHandler` in `backend/agent_account.go`.
+- **Decoding:** Decodes request body into `OpenAccountRequest` struct.
+- **Precision:** `InitialDeposit` is parsed directly into `decimal.Decimal` (not `float64`), eliminating binary rounding errors.
+
+#### Step 7: Server-Side Basic Validation
+- Checks: `req.PlanID >= 1 && req.PlanID <= 5`.
+- Checks: `len(req.PersonIDs) > 0`.
+- Checks: `!req.InitialDeposit.IsNegative()`.
+- Checks for duplicate `person_id` entries in `PersonIDs` slice using a hash map (`seen[pid]`).
+
+#### Step 8: Database Plan Retrieval & Minimum Balance Verification
+- Go queries `ACCOUNT_PLAN`:
+  ```sql
+  SELECT plan_name, min_balance FROM ACCOUNT_PLAN WHERE plan_id = ?
+  ```
+- Compares: `if req.InitialDeposit.LessThan(minBalance)`:
+  - If violated, immediately returns HTTP 400 Bad Request:
+    `"Initial deposit of LKR X is less than the required minimum balance of LKR Y for the Plan plan."`
+
+#### Step 9: Database Customer Age & Cardinality Verification
+- Checks holder count against plan rules:
+  - Plans 1–4: `len(req.PersonIDs) == 1`.
+  - Plan 5 (Joint): `len(req.PersonIDs) >= 2 && len(req.PersonIDs) <= 4`.
+- For each `person_id`, queries `PERSON` joined with `CUSTOMER` to fetch `first_name`, `last_name`, and `dob`.
+- Computes exact age using day-of-year compensation.
+- Enforces age matrix:
+  - Plan 1: rejects if `age >= 12`.
+  - Plan 2: rejects if `age < 12 || age >= 18`.
+  - Plan 3: rejects if `age < 18 || age >= 60`.
+  - Plan 4: rejects if `age < 60`.
+  - Plan 5: rejects if any holder has `age < 18`.
+
+#### Step 10: Staff Authentication & Branch Context Resolution
+- Calls `GetStaffPersonID(r, db)`: checks `Authorization: Bearer` header or `session_id` cookie against `USER_SESSION` table.
+- Queries `STAFF` table to retrieve `staffPersonID`. If session is missing or expired, returns HTTP 401 Unauthorized.
+- Resolves `branchID` via `GetStaffBranchID(staffPersonID, db)`.
+
+#### Step 11: ACID Transaction Boundary Initiation
+- Initiates transaction:
+  ```go
+  tx, err := db.BeginTx(r.Context(), nil)
+  defer tx.Rollback()
+  ```
+- **Safety Guarantee:** If any step panics, fails, or returns early, `tx.Rollback()` executes automatically.
+
+#### Step 12: Account Number Allocation & Multi-Table Inserts
+1. **Allocate Account Number:**
+   ```sql
+   SELECT COALESCE(MAX(CAST(SUBSTRING(account_no, 4) AS UNSIGNED)), 0) + 1 FROM SAVINGS_ACCOUNT
+   ```
+   Formatted into 12 characters: `ACC%09d` (e.g., `ACC000000015`).
+2. **Insert into `SAVINGS_ACCOUNT`:**
+   ```sql
+   INSERT INTO SAVINGS_ACCOUNT (account_no, plan_id, branch_id, balance, opened_date, status)
+   VALUES (?, ?, ?, 0.00, CURDATE(), 'active')
+   ```
+   *Note: Inserted with initial balance `0.00`!*
+3. **Insert Junction Records into `ACCOUNT_HOLDER`:**
+   Iterates over `req.PersonIDs` and inserts:
+   ```sql
+   INSERT INTO ACCOUNT_HOLDER (person_id, account_no) VALUES (?, ?)
+   ```
+4. **Insert Initial Deposit into `TRANSACTION`:**
+   Generates reference `INIT-ACC000000015` and inserts:
+   ```sql
+   INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks)
+   VALUES (?, ?, 'deposit', ?, 0.00, ?, 'Initial deposit on account opening')
+   ```
+
+#### Step 13: Database Trigger Interception & Execution
+- **Event:** The `before_transaction_insert` trigger fires **inside MySQL InnoDB** before the transaction row is written.
+- **Trigger Logic:**
+  - Queries `SAVINGS_ACCOUNT` and `ACCOUNT_PLAN` for current balance (`0.00`) and `min_balance`.
+  - Because `txn_type = 'deposit'`, it calculates:
+    `NEW.balance_after = current_balance + NEW.amount` (e.g., `0.00 + 5000.00 = 5000.00`).
+  - Executes: `UPDATE SAVINGS_ACCOUNT SET balance = NEW.balance_after WHERE account_no = NEW.account_no`.
+  - Sets the row's `balance_after` to `5000.00`.
+
+#### Step 14: Verification, Commit & Response Generation
+- **Verification Query:** Go queries `SELECT balance FROM SAVINGS_ACCOUNT WHERE account_no = ?` to confirm the trigger updated the balance to `5000.00`.
+- **Commit:** Go calls `tx.Commit()`. InnoDB writes the transaction to the redo log, releases table/row locks, and commits all rows permanently.
+- **Response:** Go writes HTTP 201 Created with `OpenAccountResponse` JSON payload.
+- **Frontend Resolution:** React catches the 201 response, displays a success confirmation modal with account details, and offers a printable receipt.
 
 ---
 
-## 5. Deep-Dive Module 2: Atomic Customer Fund Transfers
+### 4.5 Full Source Code Walkthrough: `backend/agent_account.go`
 
-### 5.1 ACID Guarantee & Preventing Double-Spending
+```go
+// 1. Guardian-Aware NIC Search Implementation
+func SearchCustomerByNICHandler(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        nic := strings.TrimSpace(r.URL.Query().Get("nic"))
+        if nic == "" {
+            json.NewEncoder(w).Encode([]CustomerSearchResult{})
+            return
+        }
+
+        query := `
+            SELECT * FROM (
+                SELECT c.person_id, p.first_name, p.last_name, COALESCE(p.nic, '') AS nic,
+                       c.username, DATE_FORMAT(p.dob, '%Y-%m-%d') AS dob, 'Primary' AS role,
+                       COALESCE(g.nic, '') AS guardian_nic
+                FROM CUSTOMER c
+                JOIN PERSON p ON c.person_id = p.person_id
+                LEFT JOIN PERSON g ON c.guardian_person_id = g.person_id
+                WHERE p.nic LIKE CONCAT(?, '%')
+                UNION
+                SELECT c.person_id, p.first_name, p.last_name, COALESCE(p.nic, '') AS nic,
+                       c.username, DATE_FORMAT(p.dob, '%Y-%m-%d') AS dob, 'Dependent' AS role,
+                       COALESCE(g.nic, '') AS guardian_nic
+                FROM CUSTOMER c
+                JOIN PERSON p ON c.person_id = p.person_id
+                JOIN PERSON g ON c.guardian_person_id = g.person_id
+                WHERE g.nic LIKE CONCAT(?, '%')
+            ) AS results
+            ORDER BY role ASC, first_name ASC LIMIT 15`
+
+        rows, err := db.QueryContext(r.Context(), query, nic, nic)
+        // ... scans and returns JSON
+    }
+}
+
+// 2. Open Account Atomic Transaction Engine
+func OpenAccountHandler(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        var req OpenAccountRequest
+        _ = json.NewDecoder(r.Body).Decode(&req)
+
+        // Validate plan minimum balance
+        var planName string
+        var minBalance decimal.Decimal
+        _ = db.QueryRowContext(r.Context(),
+            "SELECT plan_name, min_balance FROM ACCOUNT_PLAN WHERE plan_id = ?",
+            req.PlanID).Scan(&planName, &minBalance)
+
+        if req.InitialDeposit.LessThan(minBalance) {
+            http.Error(w, "Initial deposit below plan minimum balance", http.StatusBadRequest)
+            return
+        }
+
+        // Validate DOB & exact age using day-of-year compensation
+        // ... (age logic from section 4.3)
+
+        // Resolve authenticated staff person & branch
+        staffPersonID, _ := GetStaffPersonID(r, db)
+        branchID, _ := GetStaffBranchID(staffPersonID, db)
+
+        // Begin ACID Transaction
+        tx, err := db.BeginTx(r.Context(), nil)
+        if err != nil { /* return 500 */ }
+        defer tx.Rollback()
+
+        // Allocate sequential account number
+        accountNo, _ := generateAccountNo(tx, r.Context())
+
+        // Insert into SAVINGS_ACCOUNT with starting balance 0.00
+        _, _ = tx.ExecContext(r.Context(), `
+            INSERT INTO SAVINGS_ACCOUNT (account_no, plan_id, branch_id, balance, opened_date, status)
+            VALUES (?, ?, ?, 0.00, CURDATE(), 'active')`,
+            accountNo, req.PlanID, branchID)
+
+        // Insert junction rows into ACCOUNT_HOLDER
+        for _, pid := range req.PersonIDs {
+            _, _ = tx.ExecContext(r.Context(), `
+                INSERT INTO ACCOUNT_HOLDER (person_id, account_no) VALUES (?, ?)`,
+                pid, accountNo)
+        }
+
+        // Insert initial deposit into TRANSACTION (Fires trigger!)
+        refNo := fmt.Sprintf("INIT-%s", accountNo)
+        _, _ = tx.ExecContext(r.Context(), `
+            INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks)
+            VALUES (?, ?, 'deposit', ?, 0.00, ?, 'Initial deposit on account opening')`,
+            accountNo, staffPersonID, req.InitialDeposit.StringFixed(2), refNo)
+
+        // Verify balance updated by trigger
+        var finalBalance decimal.Decimal
+        _ = tx.QueryRowContext(r.Context(),
+            "SELECT balance FROM SAVINGS_ACCOUNT WHERE account_no = ?", accountNo).Scan(&finalBalance)
+
+        // Commit transaction
+        _ = tx.Commit()
+
+        // Return HTTP 201 Created
+        w.WriteHeader(http.StatusCreated)
+        json.NewEncoder(w).Encode(OpenAccountResponse{
+            Status: "success",
+            AccountNo: accountNo,
+            Balance: finalBalance,
+            PlanName: planName,
+            HoldersCount: len(req.PersonIDs),
+        })
+    }
+}
+```
+
+### 4.6 Frontend Wizard Architecture: `frontend/app/agent/accounts/new/page.tsx`
+The frontend wizard guides the agent through three sequential phases:
+1. **Customer Search & Selection:**
+   - Real-time input with `useDebounce(searchQuery, 300)`.
+   - Displays customer cards with `Primary` or `Dependent` badge.
+   - For joint plans, provides a dynamic "Add Holder" drawer supporting up to 4 customers.
+2. **Plan Selection & Eligibility Checking:**
+   - Visual cards showing plan interest rates and minimum balances.
+   - Live age validation against selected customers: dynamically disables plans that the customer does not qualify for.
+3. **Deposit Input & Confirmation:**
+   - Formatted currency input for `initial_deposit`.
+   - Shows live calculation of required deposit and provides instant feedback before dispatching the `POST` request.
+
+---
+
+## 5. Deep-Dive Module 2: Atomic Customer Fund Transfers Subsystem
+
+### 5.1 ACID Guarantees & Race Condition Elimination
 Double-spending occurs if a customer initiates two transfers simultaneously from two browser tabs with a balance of LKR 10,000, sending LKR 10,000 to Alice and LKR 10,000 to Bob. If the server reads the balance concurrently without locking, both transfers would succeed, leaving the bank with a LKR 10,000 loss!
 
 Arkeshan eliminated this using **Pessimistic Row-Level Locking** in `backend/transfer.go`:
 ```go
-// Lock the source account row for update
 var fromStatus string
 err = tx.QueryRowContext(r.Context(),
     "SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ? FOR UPDATE", req.FromAccount).Scan(&fromStatus)
 ```
-- `FOR UPDATE` instructs MySQL InnoDB to acquire an exclusive lock on that specific row.
+- `FOR UPDATE` instructs MySQL InnoDB to acquire an exclusive lock (X-lock) on that specific row.
 - Any concurrent transfer attempt on the same source account is forced to wait until the first transaction commits or rolls back.
 
-### 5.2 Dual-Entry Bookkeeping & Shared Reference Codes
+### 5.2 Pessimistic Row Locking (`SELECT ... FOR UPDATE`)
+- **Isolation Level:** In MySQL InnoDB, under `REPEATABLE READ`, `SELECT ... FOR UPDATE` locks the index records scanned.
+- **Race Condition Prevention:** Even if 100 requests arrive within 1 millisecond for the same sender account, MySQL forces them to execute sequentially (serialized queue).
+- **Deadlock Avoidance:** Row locks are acquired in a deterministic order and released immediately upon `tx.Commit()` or `tx.Rollback()`.
+
+### 5.3 Dual-Entry Ledger Bookkeeping & Shared Reference Codes
 In accordance with professional banking standards, a fund transfer is not a single update. It consists of two distinct ledger entries:
 1. **Debit Entry:** `txn_type = 'withdrawal'` on the sender's account.
 2. **Credit Entry:** `txn_type = 'deposit'` on the recipient's account.
@@ -391,7 +629,7 @@ func generateTransferRef() string {
 This enables auditors to reconcile debits and credits by querying:
 `SELECT * FROM TRANSACTION WHERE reference_no = 'TRF261009123045A1B2'`.
 
-### 5.3 Privacy-Preserving Account Lookup & Name Masking
+### 5.4 Privacy-Preserving Account Lookup & Name Masking (`maskName`)
 To prevent phishing and transfer errors, the frontend allows customers to preview the recipient's name before sending money. However, displaying the recipient's full legal name would violate customer privacy laws (PII leakage).
 
 Arkeshan implemented `maskName` in `backend/account.go`:
@@ -415,13 +653,198 @@ The customer can verify the initials without leaking the full identity of random
 
 ---
 
-## 6. Deep-Dive Module 3: Teller Counter Transactions
+### 5.5 Complete Step-by-Step Chronological Execution Workflow
+Here is the step-by-step trace of execution when a customer transfers funds in B-Trust MIMS:
 
-### 6.1 Overdraft Prevention & Staff Audit Trails
-In `backend/txn.go`, branch tellers process direct counter deposits and withdrawals.
+```
+[Customer UI] ---> [Recipient Lookup & Masking] ---> [Transfer POST] ---> [Auth Verification] ---> [FOR UPDATE Lock] ---> [Dual Ledger Writes] ---> [Trigger Invariant] ---> [Commit] ---> [Receipt]
+```
+
+#### Step 1: Customer Enters Recipient Account & Name Masking Query
+- **User Action:** Customer enters destination account number (e.g. `ACC000000002`) on `frontend/app/customer/transfer/page.tsx`.
+- **API Call:** React fires `GET /api/account/lookup?account_no=ACC000000002`.
+- **Backend Lookup:** `AccountHolderLookupHandler` in `backend/account.go` queries:
+  ```sql
+  SELECT p.first_name, p.last_name 
+  FROM ACCOUNT_HOLDER ah
+  JOIN PERSON p ON ah.person_id = p.person_id
+  WHERE ah.account_no = ? LIMIT 1
+  ```
+- **Masking:** Runs `maskName(firstName, lastName)` &rarr; `A*** S***`.
+- **UI Feedback:** Displays *"Transferring to: A*** S***"*, giving the sender confidence without exposing PII.
+
+#### Step 2: Form Submission & Validation
+- **User Action:** Customer selects their source account, enters transfer amount (e.g. `2500.00`), enters remarks (e.g. `"Rent payment"`), and clicks "Confirm Transfer".
+- **Client Validation:** Verifies `from_account !== to_account`, `amount > 0`, and remarks length $\ge 3$.
+- **Network Dispatch:** Dispatches `POST /api/customer/transfer` with Bearer auth token.
+
+#### Step 3: Go Entrypoint & Input Sanitization
+- **Handler:** `CustomerTransferHandler` in `backend/transfer.go`.
+- **Decoding:** Decodes body into `CustomerTransferRequest` struct.
+- **Validations:**
+  - `req.FromAccount == "" || req.ToAccount == ""` &rarr; 400 Bad Request.
+  - `req.FromAccount == req.ToAccount` &rarr; 400 Bad Request.
+  - `req.Amount.LessThanOrEqual(decimal.Zero)` &rarr; 400 Bad Request.
+
+#### Step 4: Source Account Ownership Verification
+- Calls `getAuthenticatedUser(r, db)` to resolve the active username from `USER_SESSION`.
+- Queries `ACCOUNT_HOLDER` joined with `CUSTOMER`:
+  ```sql
+  SELECT COUNT(*) 
+  FROM ACCOUNT_HOLDER ah
+  JOIN CUSTOMER c ON ah.person_id = c.person_id
+  WHERE c.username = ? AND ah.account_no = ?
+  ```
+- **Security Check:** If `count == 0`, returns HTTP 403 Forbidden: `"Invalid source account or insufficient authorization."`  
+  *(Prevents an attacker from debiting an account they do not own!)*
+
+#### Step 5: Destination Account Status Verification
+- Queries `SAVINGS_ACCOUNT` for destination account:
+  ```sql
+  SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ?
+  ```
+- If account doesn't exist or `status != 'active'`, returns HTTP 400 Bad Request: `"Destination account is invalid or cannot receive transfers."`
+
+#### Step 6: ACID Transaction Boundary & Pessimistic Row Locking
+- Initiates transaction:
+  ```go
+  tx, err := db.BeginTx(r.Context(), nil)
+  defer tx.Rollback()
+  ```
+- Acquires an exclusive row-level lock on the source account:
+  ```sql
+  SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ? FOR UPDATE
+  ```
+- **InnoDB Lock Mechanics:**
+  - Acquires an exclusive `X-lock` on the clustered index record of `req.FromAccount`.
+  - Any concurrent transfer or withdrawal on this account is blocked until this transaction finishes.
+  - Double-spending is rendered mathematically impossible.
+
+#### Step 7: Shared Reference Code Generation
+- Calls `generateTransferRef()`: generates `TRF` + `YYMMDDHHMMSS` + 6 random hex characters (e.g. `TRF261011142510A4F8`).
+
+#### Step 8: Debit Entry Write & Trigger Invariant Check
+- Executes debit insert into `TRANSACTION`:
+  ```sql
+  INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks) 
+  VALUES (?, NULL, 'withdrawal', ?, 0.00, ?, ?)
+  ```
+- **Trigger Execution (`before_transaction_insert`):**
+  - Trigger retrieves sender's current balance and required minimum balance from `SAVINGS_ACCOUNT` and `ACCOUNT_PLAN`.
+  - Evaluates: `IF (current_balance - amount) < min_balance`.
+  - **If Breached:** Trigger raises `SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Transaction Denied: Insufficient funds or minimum balance breached.'`.
+  - Go's `tx.ExecContext` receives this error. Go aborts and returns HTTP 400 Bad Request to the client. The deferred `tx.Rollback()` cleans up all locks.
+  - **If Valid:** Trigger sets `NEW.balance_after = current_balance - amount` and updates `SAVINGS_ACCOUNT.balance`.
+
+#### Step 9: Credit Entry Write & Trigger Balance Synchronization
+- Executes credit insert into `TRANSACTION` using the **same reference number**:
+  ```sql
+  INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks) 
+  VALUES (?, NULL, 'deposit', ?, 0.00, ?, ?)
+  ```
+- **Trigger Execution:**
+  - Trigger fires on recipient account.
+  - Sets `NEW.balance_after = current_balance + amount`.
+  - Updates recipient's `SAVINGS_ACCOUNT.balance`.
+
+#### Step 10: Commit, Receipt Assembly & UI Update
+- Queries sender's new balance directly: `SELECT balance FROM SAVINGS_ACCOUNT WHERE account_no = ?`.
+- Queries exact database timestamp: `SELECT timestamp FROM TRANSACTION WHERE reference_no = ? LIMIT 1`.
+- Commits transaction: `tx.Commit()`.
+- Returns HTTP 200 OK with `CustomerTransferResponse`.
+- Frontend displays a full digital receipt showing Reference No, Timestamp, Masked Recipient, Amount, and New Sender Balance.
+
+---
+
+### 5.6 Full Source Code Walkthrough: `backend/transfer.go`
+
+```go
+func CustomerTransferHandler(db *sql.DB) http.HandlerFunc {
+    return func(w http.ResponseWriter, r *http.Request) {
+        var req CustomerTransferRequest
+        _ = json.NewDecoder(r.Body).Decode(&req)
+
+        // 1. Ownership check
+        authenticatedUser, _ := getAuthenticatedUser(r, db)
+        var ownershipCount int
+        _ = db.QueryRowContext(r.Context(), `
+            SELECT COUNT(*) FROM ACCOUNT_HOLDER ah
+            JOIN CUSTOMER c ON ah.person_id = c.person_id
+            WHERE c.username = ? AND ah.account_no = ?`,
+            authenticatedUser, req.FromAccount).Scan(&ownershipCount)
+        if ownershipCount == 0 {
+            http.Error(w, "Unauthorized source account", http.StatusForbidden)
+            return
+        }
+
+        // 2. Begin ACID Transaction
+        tx, err := db.BeginTx(r.Context(), nil)
+        if err != nil { /* 500 error */ }
+        defer tx.Rollback()
+
+        // 3. Pessimistic Row Lock (FOR UPDATE)
+        var fromStatus string
+        err = tx.QueryRowContext(r.Context(),
+            "SELECT status FROM SAVINGS_ACCOUNT WHERE account_no = ? FOR UPDATE",
+            req.FromAccount).Scan(&fromStatus)
+        if err != nil || fromStatus != "active" { /* return 400 */ }
+
+        refNo := generateTransferRef()
+
+        // 4. Debit Sender (Triggers before_transaction_insert)
+        _, err = tx.ExecContext(r.Context(), `
+            INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks) 
+            VALUES (?, NULL, 'withdrawal', ?, 0.00, ?, ?)`,
+            req.FromAccount, req.Amount.String(), refNo, "Transfer to "+req.ToAccount)
+        if err != nil {
+            // Catches trigger rejection SQLSTATE 45000!
+            http.Error(w, "Transaction Denied: Insufficient funds or minimum balance breached", http.StatusBadRequest)
+            return
+        }
+
+        // 5. Credit Recipient (Triggers before_transaction_insert)
+        _, err = tx.ExecContext(r.Context(), `
+            INSERT INTO TRANSACTION (account_no, staff_person_id, txn_type, amount, balance_after, reference_no, remarks) 
+            VALUES (?, NULL, 'deposit', ?, 0.00, ?, ?)`,
+            req.ToAccount, req.Amount.String(), refNo, "Transfer from "+req.FromAccount)
+        if err != nil { /* return 400 */ }
+
+        // 6. Fetch Sender Updated Balance
+        var updatedSenderBalance decimal.Decimal
+        _ = tx.QueryRowContext(r.Context(),
+            "SELECT balance FROM SAVINGS_ACCOUNT WHERE account_no = ?",
+            req.FromAccount).Scan(&updatedSenderBalance)
+
+        // 7. Commit
+        _ = tx.Commit()
+
+        // Return HTTP 200 with Receipt
+        json.NewEncoder(w).Encode(CustomerTransferResponse{
+            Status: "success",
+            ReferenceNo: refNo,
+            SenderNewBalance: updatedSenderBalance,
+        })
+    }
+}
+```
+
+### 5.7 Frontend Transfer Portal: `frontend/app/customer/transfer/page.tsx`
+- Features a 3-step reactive UI:
+  1. Source Account Dropdown: Displays account number, plan type, and live available balance.
+  2. Recipient Input: Triggers debounce lookup and shows real-time masked name pill (`A*** S***`).
+  3. Transfer Summary & Confirmation Modal: Requires explicit confirmation before issuing network dispatch.
+- On success: Renders a printable transfer receipt component with tracking reference, timestamp, and updated balances.
+
+---
+
+## 6. Deep-Dive Module 3: Teller Counter Transactions Subsystem
+
+### 6.1 Teller Operations & Staff Audit Trail Security
+In `backend/txn.go`, branch tellers process direct counter cash deposits and cash withdrawals.
 
 Key security controls implemented by Arkeshan:
-1. **Enforcing Staff Identity:**
+1. **Mandatory Staff Identity Tracking:**
+   Every counter transaction strictly records `staff_person_id`:
    ```go
    func getStaffIDFromSession(r *http.Request, db *sql.DB) (int, error) {
        personID, err := GetStaffPersonID(r, db)
@@ -431,22 +854,51 @@ Key security controls implemented by Arkeshan:
        return personID, nil
    }
    ```
-   Every transaction records `staff_person_id`. Teller transactions cannot be submitted anonymously or spoofed.
+   Teller transactions cannot be submitted anonymously or spoofed. If an internal audit occurs, every cash movement is tied to the physical employee who handled the cash.
 2. **Autonomous Overdraft Rejection:**
    Tellers do not have permission to override minimum balance requirements. If a teller attempts to withdraw LKR 5,000 from an account holding LKR 5,500 with a LKR 1,000 minimum balance requirement, the database trigger raises `SQLSTATE 45000` and immediately blocks the operation.
+
+### 6.2 Overdraft Rejection & SQLSTATE 45000 Error Interception
+When MySQL throws `SIGNAL SQLSTATE '45000'`, the Go MySQL driver surfaces it as a regular error string. Arkeshan implemented intelligent error parsing in `backend/txn.go`:
+```go
+errMsg := err.Error()
+if strings.Contains(errMsg, "45000") || strings.Contains(errMsg, "Insufficient funds") || strings.Contains(errMsg, "minimum balance") {
+    _ = json.NewEncoder(w).Encode(map[string]string{
+        "status":  "error",
+        "message": "Transaction declined: Insufficient funds. Account balance cannot drop below the required minimum balance.",
+    })
+} else if strings.Contains(errMsg, "foreign key") || strings.Contains(errMsg, "1452") {
+    _ = json.NewEncoder(w).Encode(map[string]string{
+        "status":  "error",
+        "message": "Account number not found or inactive.",
+    })
+}
+```
+
+### 6.3 Complete Step-by-Step Chronological Execution Workflow
+1. **Teller Enters Cash Operation:** Teller inputs account number, amount, selects Deposit or Withdrawal.
+2. **Staff Session Validation:** Backend verifies session token and extracts `staff_person_id` via `GetStaffPersonID`.
+3. **Reference Generation:** Creates `DEP` or `WTH` reference number using `generateTxnRef(txnType)`.
+4. **ACID Transaction Start:** Calls `tx.BeginTx(r.Context(), nil)`.
+5. **Insert Record:** Inserts into `TRANSACTION` with `staff_person_id = secureStaffID`.
+6. **Trigger Validation:** Database trigger `before_transaction_insert` evaluates overdraft condition and updates balance.
+7. **Commit & Receipt:** Fetches `balance_after` and `timestamp`, commits `tx.Commit()`, and returns printable teller receipt.
+
+### 6.4 Full Source Code Walkthrough: `backend/txn.go`
+*(See complete source in repository [backend/txn.go](file:///d:/B-Trust-MIMS/backend/txn.go))*
 
 ---
 
 ## 7. Deep-Dive Module 4: Admin 2FA Two-Factor Authentication & Session Lifecycle
 
-### 7.1 CSPRNG vs Pseudo-Random OTP Generation
+### 7.1 CSPRNG vs Pseudo-Random OTP Generation (`crypto/rand` vs `math/rand`)
 Many student systems generate OTPs using `math/rand`:
 ```go
 // INSECURE! DO NOT DO THIS IN BANKING!
 import "math/rand"
 otp := rand.Intn(900000) + 100000
 ```
-`math/rand` is a Pseudo-Random Number Generator (PRNG) with a deterministic seed. If an attacker observes one or two generated codes, they can predict all future OTP codes!
+`math/rand` is a Pseudo-Random Number Generator (PRNG) with a deterministic seed. If an attacker observes one or two generated codes, they can calculate the internal seed state and predict all future OTP codes!
 
 Arkeshan implemented cryptographically secure randomness via `crypto/rand`:
 ```go
@@ -460,15 +912,12 @@ func GenerateSecureOTP() (string, error) {
 ```
 `crypto/rand` reads from the operating system's cryptographic entropy source (`/dev/urandom` on Linux, `CryptGenRandom` on Windows), guaranteeing non-predictability.
 
-### 7.2 5-Minute Database Rate Limiting & The Browser "Back Button" Loophole
+### 7.2 5-Minute Database Rate Limiting & Back-Button Loophole Prevention
 A critical vulnerability discovered during testing:  
-*If a user requests an OTP, navigates back in their browser, and enters their credentials again, a naive system generates a brand new OTP, enabling OTP flooding.*
+*If an admin requests an OTP, navigates back in their browser, and enters credentials again, a naive system generates a brand new OTP, enabling OTP flooding.*
 
 Arkeshan eliminated this loophole in `backend/auth.go` & `backend/otp.go`:
 ```go
-// Check for existing active OTP session
-var existingTokenID string
-var secondsRemaining int
 queryExisting := `
     SELECT token_id, TIMESTAMPDIFF(SECOND, NOW(), expires_at) 
     FROM OTP_TOKEN 
@@ -477,12 +926,9 @@ queryExisting := `
 `
 err := db.QueryRowContext(r.Context(), queryExisting, actualUsername).Scan(&existingTokenID, &secondsRemaining)
 if err == nil && existingTokenID != "" && secondsRemaining > 0 {
-    log.Printf("[2FA] Active OTP session exists for '%s' (%d seconds remaining). Reusing active verification code.\n", actualUsername, secondsRemaining)
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(http.StatusOK)
-    _ = json.NewEncoder(w).Encode(map[string]any{
+    // Return existing token and remaining time; do NOT generate new OTP!
+    json.NewEncoder(w).Encode(map[string]any{
         "status":            "otp_required",
-        "message":           "Two-factor authentication required. Verification code already sent to email.",
         "temp_token":        existingTokenID,
         "email":             MaskEmail(email),
         "seconds_remaining": secondsRemaining,
@@ -493,9 +939,10 @@ if err == nil && existingTokenID != "" && secondsRemaining > 0 {
 - If an OTP is still active within its 5-minute window, the backend **refuses to generate a new code**.
 - It returns the remaining seconds (`seconds_remaining`) so the frontend timer resumes without resetting.
 
-### 7.3 Dual-Channel Email Dispatch: HTTPS Resend API vs SMTP Port 587
+### 7.3 Dual-Channel Email Dispatch: HTTPS Resend API (Port 443) vs SMTP (Port 587)
 During cloud deployment on Render, SMTP email delivery failed with:
 `dial tcp 74.125.24.108:587: connect: connection timed out`
+
 **Why?** Free and standard cloud hosting providers (Render, AWS, DigitalOcean) block outbound traffic on SMTP ports (`25`, `465`, `587`) to prevent automated spam botnets.
 
 Arkeshan implemented a resilient dual-channel strategy:
@@ -503,7 +950,7 @@ Arkeshan implemented a resilient dual-channel strategy:
 2. **Secondary Local Channel:** Traditional SMTP via `net/smtp` for local developer environments.
 3. **Console Fallback:** Always prints the OTP to the server log for local debugging.
 
-### 7.4 Triple-Tier Safe Logout Protocol
+### 7.4 Triple-Tier Safe Logout Protocol (DB, Cookie, Client Storage)
 In `backend/auth.go`, logging out cannot simply be deleting a client cookie. Arkeshan implemented complete session termination across three tiers:
 1. **Database Tier:** `DELETE FROM USER_SESSION WHERE session_id = ?` (Immediate server-side invalidation).
 2. **Cookie Tier:** `http.SetCookie(w, &http.Cookie{Name: "session_id", Value: "", MaxAge: -1, Expires: time.Unix(0, 0)})` (Instructs browser to wipe cookie storage).
@@ -511,19 +958,79 @@ In `backend/auth.go`, logging out cannot simply be deleting a client cookie. Ark
 
 ---
 
-## 8. Deep-Dive Module 5: Today's Bug Fix & Route Unification
+### 7.5 Complete Step-by-Step Chronological Execution Workflow
+Here is the step-by-step trace of the Admin Two-Factor Authentication lifecycle:
 
-### 8.1 The Route Collision Problem
+```
+[Admin Credentials] ---> [Bcrypt Match] ---> [Active OTP Check] ---> [CSPRNG Generation] ---> [Resend HTTPS Email] ---> [Verify OTP] ---> [Issue Session]
+```
+
+#### Step 1: Admin Credentials Submission
+- Admin enters `username` and `password` on `frontend/app/login/page.tsx`.
+- Dispatches `POST /api/auth/login`.
+
+#### Step 2: Primary Password Verification
+- `LoginHandler` in `backend/auth.go` queries `USER_ACCOUNT`.
+- Compares password hash using `bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))`.
+- If passwords match and `user.Type == "admin"`, the login flow intercepts standard session issuance and enters the **2FA Challenge Protocol**.
+
+#### Step 3: Checking Active OTP Window (Rate Limiting)
+- Queries `OTP_TOKEN` for unexpired, unused token for that username.
+- If an OTP is already active (e.g., 210 seconds remaining), returns `status: "otp_required"` with existing `temp_token` and `seconds_remaining: 210`. The server **does not generate or email a new code**.
+
+#### Step 4: Generating New Secure OTP
+- If no active token exists, calls `CreateOTP(db, username, "login")`.
+- Calls `GenerateSecureOTP()`: generates 6-digit number using `crypto/rand.Int(rand.Reader, big.NewInt(900000)) + 100000`.
+- Hashes plain OTP using `bcrypt.GenerateFromPassword([]byte(plainOTP), bcrypt.DefaultCost)`.
+- Generates 24-byte tracking token `temp_token` via `crypto/rand` hex encoding.
+- Inserts into `OTP_TOKEN` with `expires_at = DATE_ADD(NOW(), INTERVAL 5 MINUTE)`.
+
+#### Step 5: Dual-Channel Email Delivery
+- Calls `SendEmailOTP(adminEmail, plainOTP)`.
+- Checks for `RESEND_API_KEY`: if set, constructs HTML email and sends HTTP POST to `https://api.resend.com/emails` over port 443.
+- If Resend is absent, falls back to `net/smtp.SendMail` on port 587.
+- Always logs OTP code to server console for local testing.
+
+#### Step 6: Client 2FA Challenge Screen
+- Backend returns `status: "otp_required"`, `temp_token`, and masked email (`a***e@gmail.com`).
+- Frontend renders the 6-digit OTP input modal with a live 300-second countdown timer.
+
+#### Step 7: Verification Request Submission
+- Admin inputs 6-digit code received via email.
+- Frontend dispatches `POST /api/auth/otp/verify` with `temp_token` and `otp`.
+
+#### Step 8: Bcrypt Hash Comparison & Invalidation
+- `VerifyOTPHandler` in `backend/otp.go` queries `OTP_TOKEN` by `temp_token` where `expires_at > NOW()`.
+- Validates OTP using `bcrypt.CompareHashAndPassword([]byte(otpHash), []byte(req.OTP))`.
+- If code matches, immediately deletes row from `OTP_TOKEN` (`DELETE FROM OTP_TOKEN WHERE token_id = ?`) to prevent replay attacks.
+
+#### Step 9: Authoritative Session Issuance
+- Generates 32-byte cryptographically secure session token `sessionToken`.
+- Inserts into `USER_SESSION` table with `expires_at = time.Now().Add(24 * time.Hour)` and `device_ip`.
+- Sets HTTP-Only cookie `session_id` and returns JSON response with `token` and `user` profile.
+- Admin portal loads securely.
+
+---
+
+### 7.6 Full Source Code Walkthrough: `backend/otp.go` & `backend/auth.go`
+*(See complete source in repository [backend/otp.go](file:///d:/B-Trust-MIMS/backend/otp.go) and [backend/auth.go](file:///d:/B-Trust-MIMS/backend/auth.go))*
+
+---
+
+## 8. Deep-Dive Module 5: Customer Search Route Unification & Cross-Origin Fixes
+
+### 8.1 The Route Collision Problem (`/api/agent/customer/search`)
 When opening an account in the Agent Portal, searching for customers by NIC failed to return any results.
+
 **Investigation & Root Cause Analysis:**
 - In `backend/main.go`:
   `http.HandleFunc("/api/agent/customer/search", enableCORS(AgentCustomerSearchHandler(db)))`
-- Dinisuru had implemented `AgentCustomerSearchHandler` in `agent_fd.go` for the Fixed Deposit module, which strictly expected `r.URL.Query().Get("username")`.
+- Teammate Dinisuru had implemented `AgentCustomerSearchHandler` in `agent_fd.go` for the Fixed Deposit module, which strictly expected `r.URL.Query().Get("username")`.
 - When the Open Savings Account wizard searched with `?nic=1980`, `username` was empty, causing `AgentCustomerSearchHandler` to reject the request with `400 Bad Request: {"error": "username is required"}`!
-- Meanwhile, Arkeshan's Guardian-aware search (`SearchCustomerByNICHandler`) was unmapped from the router.
+- Meanwhile, Arkeshan's Guardian-aware search (`SearchCustomerByNICHandler`) was completely unmapped from the router.
 
-### 8.2 Unified Handler Architecture
-Arkeshan unified both search pathways inside `AgentCustomerSearchHandler`:
+### 8.2 Unified Query Parameter Multiplexing Architecture
+Arkeshan unified both search pathways inside `AgentCustomerSearchHandler` in `backend/agent_fd.go`:
 ```go
 func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
@@ -544,20 +1051,53 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
             http.Error(w, "nic or username parameter is required", http.StatusBadRequest)
             return
         }
-        ...
+        // ... FD username search execution
+    }
+}
 ```
 
-### 8.3 Eliminating Localhost CORS Overrides for Cloud Portals
+### 8.3 CORS Normalization & Eliminating Hardcoded Localhost Overrides
 Several handlers had hardcoded headers:
 `w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")`
 When running on `btrust2.vercel.app`, the central middleware `enableCORS` set the origin dynamically, but the inner handler overwrote it back to `http://localhost:3000`, causing browser CORS blocks!  
 Arkeshan purged these hardcoded overrides, allowing `enableCORS` to handle dynamic origins cleanly across development and cloud environments.
 
+### 8.4 Complete Step-by-Step Execution Workflow
+1. Request arrives at `/api/agent/customer/search`.
+2. Multiplexer checks `r.URL.Query().Has("nic")`.
+3. If true, delegates directly to `SearchCustomerByNICHandler(db)`.
+4. If false, extracts `?username=` for Fixed Deposit lookup.
+5. If neither exists, returns clean `400 Bad Request: "nic or username parameter is required"`.
+
 ---
 
-## 9. Database Layer Deep Dive
+## 9. Database Layer Deep Dive: Schema, Triggers, Constraints & Indexes
 
-### 9.1 The Core Trigger: `before_transaction_insert`
+### 9.1 Relational Normalization: Third Normal Form (3NF) Justification
+The database schema conforms strictly to **Third Normal Form (3NF)**:
+1. **First Normal Form (1NF):** All attributes are atomic (no repeating groups, comma-separated lists, or nested JSON structures in core tables).
+2. **Second Normal Form (2NF):** All non-key attributes are fully functionally dependent on the entire primary key. In `ACCOUNT_HOLDER(person_id, account_no)`, there are no partial dependencies because it contains only foreign keys forming a composite primary key.
+3. **Third Normal Form (3NF):** No transitive functional dependencies exist ($X \rightarrow Y$ and $Y \rightarrow Z$).
+   - *Example:* In `SAVINGS_ACCOUNT`, we store `plan_id`, but we **do not store** `interest_rate` or `min_balance`.
+   - Those attributes reside in `ACCOUNT_PLAN`. If interest rates change, updating `ACCOUNT_PLAN` updates the rate across the bank without update anomalies.
+
+### 9.2 Junction Table Modeling: Multi-Holder M:N Association
+The relationship between `PERSON` and `SAVINGS_ACCOUNT` is Many-to-Many ($M:N$):
+- One customer can hold multiple accounts (e.g. personal savings, business savings).
+- One account can be owned by multiple customers (e.g. Joint account with 2–4 holders).
+
+We resolved this via the associative junction table `ACCOUNT_HOLDER`:
+```sql
+CREATE TABLE ACCOUNT_HOLDER (
+    person_id INT NOT NULL,
+    account_no VARCHAR(12) NOT NULL,
+    PRIMARY KEY (person_id, account_no),
+    FOREIGN KEY (person_id) REFERENCES PERSON(person_id) ON DELETE CASCADE,
+    FOREIGN KEY (account_no) REFERENCES SAVINGS_ACCOUNT(account_no) ON DELETE CASCADE
+);
+```
+
+### 9.3 The Core Trigger: `before_transaction_insert` Internal Engine Lifecycle
 ```sql
 DELIMITER //
 CREATE TRIGGER before_transaction_insert
@@ -567,12 +1107,14 @@ BEGIN
     DECLARE current_balance DECIMAL(15,2);
     DECLARE required_min_balance DECIMAL(12,2);
 
+    -- 1. Query current balance & plan minimum balance
     SELECT sa.balance, ap.min_balance 
     INTO current_balance, required_min_balance
     FROM SAVINGS_ACCOUNT sa
     JOIN ACCOUNT_PLAN ap ON sa.plan_id = ap.plan_id
     WHERE sa.account_no = NEW.account_no;
 
+    -- 2. Validate withdrawal constraints
     IF NEW.txn_type = 'withdrawal' THEN
         IF (current_balance - NEW.amount) < required_min_balance THEN
             SIGNAL SQLSTATE '45000'
@@ -584,6 +1126,7 @@ BEGIN
             WHERE account_no = NEW.account_no;
         END IF;
 
+    -- 3. Synchronize deposit / interest credits
     ELSEIF NEW.txn_type IN ('deposit', 'interest') THEN
         SET NEW.balance_after = current_balance + NEW.amount;
         UPDATE SAVINGS_ACCOUNT 
@@ -593,25 +1136,45 @@ BEGIN
 END //
 DELIMITER ;
 ```
-**Why the trigger is critical:**
-1. It eliminates race conditions between calculating the balance in application code and updating it in the database.
-2. It guarantees that **no transaction record can ever exist without updating `SAVINGS_ACCOUNT.balance`**.
-3. It makes minimum balance violations impossible, even if a buggy or malicious client bypasses frontend checks.
 
-### 9.2 Relational Normalization (3NF) & Schema Design
-The system conforms strictly to **Third Normal Form (3NF)**:
-- **`PERSON` Table:** Contains individual biometric and demographic data (`person_id`, `first_name`, `last_name`, `nic`, `dob`, `phone_number`, `address`, `city`).
-- **`CUSTOMER` Table:** Inherits `person_id`, linking to physical persons. Contains banking relationships (`assigned_agent_person_id`, `guardian_person_id`, `registered_branch_id`).
-- **`STAFF` Table:** Inherits `person_id`. Contains employment relationships (`role`, `branch_id`).
-- **`USER_ACCOUNT` Table:** Decoupled authentication credentials (`username`, `password_hash`, `email`, `type`, `status`).
-- **`ACCOUNT_HOLDER` Table:** Pure junction table resolving the **Many-to-Many relationship** between `PERSON` and `SAVINGS_ACCOUNT` (enabling single holders, joint holders, and corporate holdings).
+#### The MySQL Engine Execution Lifecycle:
+1. Go executes `INSERT INTO TRANSACTION ...`.
+2. InnoDB initializes a new row buffer (`NEW`).
+3. The `BEFORE INSERT` trigger intercepts the operation **before writing to the table leaf page**.
+4. The trigger queries `SAVINGS_ACCOUNT` using the clustered index on `account_no`.
+5. If `NEW.txn_type = 'withdrawal'` and `(current_balance - amount) < min_balance`:
+   - MySQL raises `SIGNAL SQLSTATE '45000'`.
+   - Statement execution halts immediately.
+   - The row is discarded from the buffer; no row is written to `TRANSACTION`.
+   - MySQL returns error code 45000 to the Go driver, prompting `tx.Rollback()`.
+6. If valid:
+   - Sets `NEW.balance_after`.
+   - Executes internal `UPDATE SAVINGS_ACCOUNT SET balance = NEW.balance_after`.
+   - Both the row insert and balance update execute within the active transaction boundary.
+
+### 9.4 B+ Tree Indexing Strategy & Performance Optimization
+In `database/indexes.sql`, we created targeted secondary B+ Tree indexes:
+```sql
+CREATE INDEX idx_txn_account_no ON TRANSACTION(account_no);
+CREATE INDEX idx_txn_ref_no ON TRANSACTION(reference_no);
+CREATE INDEX idx_ah_account_no ON ACCOUNT_HOLDER(account_no);
+CREATE INDEX idx_person_nic ON PERSON(nic);
+```
+- **Why?** MySQL InnoDB stores tables ordered by Primary Key in a clustered B+ tree index.
+- Lookups on foreign keys (`account_no` in `TRANSACTION`) would require full-table scans ($O(N)$) without secondary indexes.
+- With B+ Tree indexes, lookups run in $O(\log N)$ time, ensuring fast transfer history queries even with millions of ledger entries.
 
 ---
 
 ## 10. Cloud Deployment & Production DevOps Architecture
 
-### 10.1 Next.js Reverse Proxy & Rewrite Architecture
-In `frontend/next.config.ts`:
+### 10.1 Hybrid Cloud Topology: Vercel + Render + Aiven Cloud MySQL
+Our production infrastructure is deployed in a hybrid cloud configuration:
+- **Presentation Tier (Vercel CDN):** Next.js 16 App Router deployed across global edge points of presence.
+- **Application Tier (Render Cloud):** Linux container running our compiled Go backend binary.
+- **Data Tier (Aiven Cloud):** Fully managed MySQL 8.0 cluster with automated replication and TLS encryption.
+
+### 10.2 Next.js Server-Side Reverse Proxy (`next.config.ts`)
 ```ts
 const backendUrl = (process.env.BACKEND_URL || "http://localhost:8080").replace(/\/+$/, "");
 
@@ -630,8 +1193,7 @@ const nextConfig: NextConfig = {
 - The browser only communicates with `https://btrust2.vercel.app`.
 - The browser never encounters CORS preflight restrictions or cross-domain third-party cookie blocking because all API requests are routed through Vercel's server-side reverse proxy.
 
-### 10.2 Containerization with Multi-Stage Dockerfile
-In `backend/Dockerfile`:
+### 10.3 Multi-Stage Docker Build Pipeline (`backend/Dockerfile`)
 ```dockerfile
 # Stage 1: Build binary
 FROM golang:1.24-alpine AS builder
@@ -652,9 +1214,14 @@ CMD ["./btrust-backend"]
 - **Image Size:** Reduced from ~1 GB (full Go SDK) to **~25 MB** (minimal Alpine runtime).
 - **Security:** Contains no compiler toolchains or shell utilities that could be leveraged during remote code execution attacks.
 
+### 10.4 Production TLS Encryption & Database Connection Pooling
+- Connected using TLS parameter in Go DSN:
+  `root:password@tcp(host:14937)/btrust?parseTime=true&loc=Local&tls=skip-verify`
+- Go's `sql.DB` manages an internal pool of persistent database connections, eliminating the latency of opening a new TCP handshake for every HTTP request.
+
 ---
 
-## 11. The Master Viva Defense Question Bank
+## 11. The Master Viva Defense Question Bank (60 Comprehensive Q&As)
 
 ### Category A: Architecture & Structural Decisions
 
@@ -720,7 +1287,7 @@ CMD ["./btrust-backend"]
 ### Category D: Security, Authentication & 2FA
 
 #### Q33: How does your system prevent Admin OTP brute-force attacks?
-> **Answer:** Through three distinct layers:
+> **Answer:** Through four distinct layers:
 > 1. **CSPRNG Tokens:** OTPs are generated using `crypto/rand`, preventing mathematical prediction.
 > 2. **Strict Expiration:** Each OTP expires exactly 300 seconds (5 minutes) after creation.
 > 3. **Database-Enforced Rate Limiting:** The backend checks `OTP_TOKEN` for unexpired, unused tokens. If one exists, the server reuses the active token and returns the remaining TTL rather than issuing a new code.

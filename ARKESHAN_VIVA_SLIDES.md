@@ -153,3 +153,4 @@
   * **Answer:** *"MySQL's InnoDB storage engine uses row-level locking. When our trigger executes `UPDATE SAVINGS_ACCOUNT SET balance = ... WHERE account_no = ...`, InnoDB automatically acquires an exclusive row lock (`X-lock`) on that account's primary key record. Any concurrent transaction attempting to modify that same account is queued until the first transaction commits or rolls back, guaranteeing strict **Isolation** under ACID."*
 * **Q: How does your trigger differentiate between a deposit, withdrawal, and interest payout?**
   * **Answer:** *"The trigger inspects the `NEW.txn_type` ENUM column. If `NEW.txn_type = 'withdrawal'`, it performs the subtraction and minimum balance check. If `NEW.txn_type IN ('deposit', 'interest')`, it adds the amount to the balance and writes the new balance without checking for minimum balance violations."*
+
