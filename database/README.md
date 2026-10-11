@@ -51,8 +51,8 @@ Runs before insert on TRANSACTION.
 
 ## Events (events.sql)
 
-### monthly_fd_interest_event (Nimthara)
-Runs every 1 month to execute ProcessFDInterest().
+### process_fd_interest_event (Nimthara)
+Runs daily at midnight (00:00:00) to execute ProcessFDInterest().
 
 ## Indexes (indexes.sql) (Achira)
 
