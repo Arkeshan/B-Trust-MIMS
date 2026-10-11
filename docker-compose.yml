@@ -28,7 +28,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ./backend/.env
+      - .env
     environment:
       - DB_USER=root
       - DB_PASSWORD=${DB_ROOT_PASSWORD}

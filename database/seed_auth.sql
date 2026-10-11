@@ -19,11 +19,11 @@ INSERT INTO USER_ACCOUNT (username, password_hash, email, type, status, last_log
 
 -- 3. Create 5 Agent Personal Profiles
 INSERT INTO PERSON (first_name, last_name, nic, dob, phone_number, address, city) VALUES
-    ('Achira', 'Perera', '199512345678', '1995-01-15', '0771112222', '1A Temple Rd', 'Batticaloa'),
-    ('Ark', 'Silva', '199612345678', '1996-06-20', '0772223333', '2B Beach Rd', 'Trinco'),
-    ('Dinisiru', 'Fernando', '199712345678', '1997-08-30', '0773334444', '3C Lake View', 'Ampara'),
-    ('Nethmi', 'Kumari', '199812345678', '1998-11-11', '0774445555', '4D Market St', 'Batticaloa'),
-    ('Vimukthi', 'Rajapaksha', '199912345678', '1999-12-05', '0775556666', '5E Hill St', 'Trinco');
+    ('Achira', 'Ayumal', '200412345678', '2004-01-15', '0771112222', '1A Temple Rd', 'Batticaloa'),
+    ('Ark', 'S', '200422345678', '2004-06-20', '0772223333', '2B Beach Rd', 'Trinco'),
+    ('Dinsiru', 'S', '200432345678', '2004-08-30', '0773334444', '3C Lake View', 'Ampara'),
+    ('Nethmi', 'Dissanayake', '200442345678', '2004-11-11', '0774445555', '4D Market St', 'Batticaloa'),
+    ('Vimukthi', 'Senanayake', '200452345678', '2004-12-05', '0775556666', '5E Hill St', 'Trinco');
 
 -- 4. Map Profiles to Logins and Branches
 INSERT INTO STAFF (person_id, username, branch_id, role) VALUES

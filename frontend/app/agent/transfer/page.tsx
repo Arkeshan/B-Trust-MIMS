@@ -280,27 +280,40 @@ export default function AgentTransferPage() {
                     <input
                       ref={searchInputRef}
                       type="text"
+                      maxLength={12}
                       placeholder="Type account number "
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) =>
+                        setSearchQuery(
+                          e.target.value
+                            .toUpperCase()
+                            .replace(/[^A-Z0-9]/g, "")
+                            .slice(0, 12),
+                        )
+                      }
                       onFocus={() => {
                         if (searchResults.length > 0) setIsDropdownOpen(true);
                       }}
-                      className="w-full rounded-xl border border-gray-300 bg-[#F9FAFB] pl-10 pr-10 py-3 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
+                      className="w-full rounded-xl border border-gray-300 bg-[#F9FAFB] pl-10 pr-24 py-3 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
                     />
-                    {isSearching ? (
-                      <div className="absolute right-3.5 h-4 w-4 rounded-full border-2 border-[#06B6D4] border-t-transparent animate-spin"></div>
-                    ) : searchQuery ? (
-                      <button
-                        onClick={() => {
-                          setSearchQuery("");
-                          setSearchResults([]);
-                        }}
-                        className="absolute right-3.5 text-gray-400 hover:text-gray-600"
-                      >
-                        <X size={16} />
-                      </button>
-                    ) : null}
+                    <div className="absolute right-3.5 flex items-center gap-3">
+                      <span className="text-xs font-mono font-medium text-gray-400">
+                        {searchQuery.length}/12
+                      </span>
+                      {isSearching ? (
+                        <div className="h-4 w-4 rounded-full border-2 border-[#06B6D4] border-t-transparent animate-spin"></div>
+                      ) : searchQuery ? (
+                        <button
+                          onClick={() => {
+                            setSearchQuery("");
+                            setSearchResults([]);
+                          }}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <X size={16} />
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
 
                   {/* Autocomplete Dropdown */}

@@ -91,14 +91,27 @@ export default function NewCustomerPage() {
     e.preventDefault();
     setError("");
 
-    if (age !== null && age < 18 && !guardianNic.trim()) {
-      setError("Guardian NIC is required for minors under 18 years of age.");
-      return;
+    if (age !== null && age < 18) {
+      if (!guardianNic.trim()) {
+        setError("Guardian NIC is required for minors under 18 years of age.");
+        return;
+      }
+      if (guardianNic.trim().length !== 12) {
+        setError("Guardian NIC must be exactly 12 characters (e.g. 198000000001).");
+        return;
+      }
     }
+
     if (age !== null && age >= 18 && !nic.trim()) {
       setError("National Identity Card (NIC) is required for adult customers.");
       return;
     }
+
+    if (nic.trim() && nic.trim().length !== 12) {
+      setError("National Identity Card (NIC) must be exactly 12 characters (e.g. 199012345678).");
+      return;
+    }
+
     if (phone.length !== 10) {
       setError("Phone number must be exactly 10 digits (e.g. 0771234567).");
       return;
@@ -274,20 +287,21 @@ export default function NewCustomerPage() {
                   htmlFor={nicId}
                   className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
-                  {isMinor
-                    ? "Guardian's National Identity Card *"
-                    : "National Identity Card *"}
+                  National Identity Card (12 Characters) {isMinor ? "(Optional for Minor)" : "*"}
                 </label>
                 <input
                   id={nicId}
                   type="text"
                   required={!isMinor}
+                  maxLength={12}
                   value={nic}
-                  onChange={(e) => setNic(e.target.value)}
+                  onChange={(e) =>
+                    setNic(e.target.value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 12))
+                  }
                   placeholder={
                     isMinor ? "Not required for minors" : "e.g. 199012345678"
                   }
-                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
+                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20 font-mono"
                 />
               </div>
 
@@ -423,7 +437,7 @@ export default function NewCustomerPage() {
                       htmlFor={guardianNicId}
                       className="block text-xs font-bold uppercase tracking-wider text-amber-900"
                     >
-                      Guardian NIC * (Required for Minors)
+                      Guardian NIC (12 Characters) *
                     </label>
                   </div>
                   <p className="text-xs text-amber-800 leading-relaxed">
@@ -434,10 +448,13 @@ export default function NewCustomerPage() {
                     id={guardianNicId}
                     type="text"
                     required
+                    maxLength={12}
                     value={guardianNic}
-                    onChange={(e) => setGuardianNic(e.target.value)}
-                    placeholder="Enter Guardian's registered NIC"
-                    className="block w-full rounded-xl border border-amber-300 bg-white px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200"
+                    onChange={(e) =>
+                      setGuardianNic(e.target.value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 12))
+                    }
+                    placeholder="Enter Guardian's 12-character NIC"
+                    className="block w-full rounded-xl border border-amber-300 bg-white px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-amber-500 focus:ring-2 focus:ring-amber-200 font-mono"
                   />
                 </div>
               )}

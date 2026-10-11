@@ -77,7 +77,9 @@ func requireAdmin(db *sql.DB, next http.HandlerFunc) http.HandlerFunc {
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using environment variables")
+		if err := godotenv.Load("../.env"); err != nil {
+			log.Println("No .env file found, using environment variables")
+		}
 	}
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
@@ -176,6 +178,7 @@ func main() {
 	http.HandleFunc("/api/account/lookup", enableCORS(AccountHolderLookupHandler(db)))
 	http.HandleFunc("/api/customer/transfer", enableCORS(CustomerTransferHandler(db)))
 	http.HandleFunc("/api/customer/agent", enableCORS(CustomerAgentInfoHandler(db)))
+	http.HandleFunc("/api/customer/profile", enableCORS(CustomerProfileHandler(db)))
 
 	// Customer Portal Routes — dispatch account sub-paths
 	http.HandleFunc("/api/account/", enableCORS(func(w http.ResponseWriter, r *http.Request) {

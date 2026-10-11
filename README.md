@@ -1,122 +1,156 @@
 # B-Trust Microbanking and Interest Management System (MIMS)
 
-Enterprise banking solution featuring customer internet banking, staff/agent counter operations, and admin reporting dashboards.
+Microbanking and interest management web application supporting customer internet banking, agent counter operations, and admin reporting.
 
-## Architecture Diagram (Frontend → Backend → MySQL)
+## System Architecture
+
 ```text
-[ Client Browser ] ──HTTPS──► [ Nginx Reverse Proxy (Port 443) ]
-                                      │
-[ Next.js Frontend (Port 3000) ] ◄────┘
-                                      │ (API Routes)
-[ Go REST API Backend (Port 8080) ] ◄─┘
-                                      │
-[ MySQL 8.0 Database (Port 3307) ] ◄──┘ (TCP 3306)
-
+                           [ Client Web Browser ]
+                                     │
+                               HTTPS (Port 443)
+                                     ▼
+                      [ Nginx Reverse Proxy & SSL ]
+                                     │
+           ┌─────────────────────────┴─────────────────────────┐
+           │ HTTP (Port 3000)                                  │ HTTP (Port 8080)
+           ▼                                                   ▼
+[ Next.js 16 Frontend ]                           [ Go REST API Backend ]
+(Customer, Agent, Admin UI)                       (Authentication, Business Logic)
+                                                               │
+                                                               │ TCP (Port 3306)
+                                                               ▼
+                                                       [ MySQL 8.0 Database ]
+                                                (Triggers, Procedures, Views, Events)
 ```
+
+## Team Contributions
+
+| Team Member | Role / Responsibilities |
+| :--- | :--- |
+| **Arkeshan S** | System architecture, database schema, transaction triggers, account origination, fund transfers, admin 2FA, Docker setup |
+| **Achira Ayumal** | Agent portal shell, person identity schema, database indexing, authentication, recent transactions |
+| **Dinisiru Sangadith** | Fixed deposit management, interest calculation stored procedure, agent portfolio, 30-day ledger |
+| **Nethmi Dissanayake** | Teller counter operations, interest distribution event scheduler, customer settings, password management |
+| **Vimukthi Senanayake** | Customer registration and guardian verification, admin reporting views, CSV export |
+
+### Individual Contributions Breakdown
+
+#### Arkeshan S
+- **Database:** Designed core tables (`SAVINGS_ACCOUNT`, `ACCOUNT_HOLDER`, `TRANSACTION`, `STAFF`, `CUSTOMER`, `USER_ACCOUNT`, `USER_SESSION`). Implemented `before_transaction_insert` trigger for balance updates, overdraft prevention, and minimum balance checks.
+- **Backend:** Implemented internal fund transfer handler (`CustomerTransferHandler`) with transaction rollbacks and reference generation. Implemented counter transaction execution (`ProcessTransaction`). Built account origination endpoint (`OpenAccountHandler`) with account number generation. Implemented admin email OTP 2FA with rate limiting.
+- **Frontend:** Customer transfer page with recipient lookup and receipt display. Agent account origination form (adult, child, senior, joint accounts).
+- **Deployment:** Docker and Docker Compose configuration with Nginx reverse proxy. Deployment setup for Vercel, Render, and Aiven MySQL.
+
+#### Achira Ayumal
+- **Database:** `PERSON` table schema for personal records. Database indexing on lookup columns (`idx_username`, `idx_email`, `idx_account_no`). Rolling transaction view `vw_recent_txn`.
+- **Backend:** Login handler (`LoginHandler`) with bcrypt authentication and password validation. Staff ID resolution helper (`GetStaffPersonID`). 7-day rolling transaction history handler (`RecentHistoryHandler`).
+- **Frontend:** Agent portal layout and sidebar navigation (`agent/layout.tsx`). Agent header with session display and logout. Customer recent transaction history component.
+
+#### Dinisiru Sangadith
+- **Database:** `FIXED_DEPOSIT` and `BRANCH` table schemas. Stored procedure `ProcessFDInterest()` using cursors for 30-day interest calculation. Fixed deposit status view `vw_fd_status`.
+- **Backend:** Fixed deposit endpoints (`OpenFDHandler`, `ListFDHandler`, `FDStatusHandler`, `CronInterestHandler`). Agent reporting endpoints (`AgentCustomersHandler`, `AgentLedgerHandler`, `AgentStatsHandler`).
+- **Frontend:** Agent fixed deposit creation form (`agent/fd/new`). Agent portfolio page with customer account tree, 30-day transaction ledger, and summary KPI cards.
+
+#### Nethmi Dissanayake
+- **Database:** `ACCOUNT_PLAN` table schema. Scheduled event `monthly_fd_interest_event` for monthly interest processing. Interest transaction type handling in triggers.
+- **Backend:** Account history retrieval (`AccountHistoryHandler`). Password change handler (`ChangePasswordHandler`) with bcrypt validation. Assigned agent contact lookup (`CustomerAgentInfoHandler`).
+- **Frontend:** Agent teller counter page (`agent/transfer`) with account lookup and printable transaction receipt modal. Customer settings page (`customer/settings`) for password updates. Customer dashboard navigation.
+
+#### Vimukthi Senanayake
+- **Database:** `FD_PLAN` table schema. Management reporting views (`vw_agent_transaction_summary`, `vw_account_transaction_summary`, `vw_active_fd_payouts`, `vw_monthly_interest_by_account_type`, `vw_customer_activity`).
+- **Backend:** Customer registration handler (`RegisterCustomerHandler`) with age check and guardian validation. Admin reports handler (`ReportsHandler`) with data aggregation and CSV export streaming.
+- **Frontend:** Agent customer registration form (`agent/customers/new`) with guardian field toggling for minors. Admin reports dashboard (`admin/reports`) with 5 reporting tabs and CSV download.
 
 ## Tech Stack
 
-* **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, Lucide Icons
-* **Backend:** Go 1.24+, MySQL standard driver, shopspring/decimal
-* **Database:** MySQL 8.0 (InnoDB, ACID transactions, stored procedures, triggers, views)
-* **Containerization:** Docker & Docker Compose (with Nginx)
+- **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, Lucide Icons
+- **Backend:** Go 1.24+ (`net/http`, `database/sql`, `shopspring/decimal`, `golang.org/x/crypto/bcrypt`)
+- **Database:** MySQL 8.0 (InnoDB, Triggers, Views, Stored Procedures, Events)
+- **Infrastructure:** Docker, Docker Compose, Nginx
+- **Cloud Hosting:** Vercel (Frontend), Render (Backend), Aiven Cloud (MySQL)
 
-## Live Cloud Deployment
+## Getting Started
 
-* **Frontend Portal (Vercel):** [https://btrust2.vercel.app](https://btrust2.vercel.app)
-* **Backend REST API (Render):** [https://btrust-backend.onrender.com](https://btrust-backend.onrender.com)
-* **Database (Aiven Cloud):** MySQL 8.0 Cloud Cluster with TLS Encryption
+### Local Setup with Docker (Recommended)
 
-## Documentation & Viva Study Resources
-- **Master Viva Defense Guide (Arkeshan):** [ARKESHAN_VIVA_MASTER_GUIDE.md](./ARKESHAN_VIVA_MASTER_GUIDE.md) — Comprehensive technical architecture, full implementation code, triggers, ACID flows, and 60+ expected viva Q&As.
-- **Admin 2FA Security Report:** [arkeshan_final_implementation_report.md](./arkeshan_final_implementation_report.md)
-- **Agent Portal Architecture Plan:** [Agent_Portal_Assignments.md](./Agent_Portal_Assignments.md)
-- **Project Team Matrix:** [CONTRIBUTORS.md](./CONTRIBUTORS.md)
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Arkeshan/B-Trust-MIMS.git
+   cd B-Trust-MIMS
+   ```
 
-## Prerequisites
+2. Build and run containers:
+   ```bash
+   docker compose up --build
+   ```
 
-* Docker Desktop (Running in background)
-* Docker Compose
-* Git
-* Go 1.24+ and Node.js 20+ (Only required for local development without Docker)
+3. Open the application:
+   - http://localhost:3000/
 
-## Quick Start (Local Docker Containerization)
-
-Run the entire secure bank stack (Database + Backend + Frontend + Nginx) with a single command:
-
+To reset the database with seed data:
 ```bash
-cp .env.example .env
-docker-compose up --build
-
+docker compose down -v
+docker compose up --build
 ```
 
-Access the secure portal at: **https://localhost**
+### Cloud Deployment
 
-### Default Login Credentials Table
+- Frontend: https://btrust2.vercel.app
+- Backend API: https://b-trust-mims-backend.onrender.com
+- Database: Managed MySQL 8.0 on Aiven Cloud
 
-| Role | Username | Password | Login Route |
-| --- | --- | --- | --- |
-| **Admin** | `admin_btrust` | `admin123` | `/admin/login` (Requires 2FA Email OTP) |
-| **Agent** | `agent_achira` | `password123` | `/login` |
-| **Agent** | `agent_ark` | `password123` | `/login` |
-| **Customer** | `cust_1` | `pass1` | `/login` (Has active Fixed Deposit) |
-| **Customer** | `cust_2` | `pass2` | `/login` |
+### Manual Setup (Without Docker)
 
-## API Endpoints Reference
+1. Start MySQL 8.0 and run the SQL scripts in `database/` in sequential order (`schema.sql` through `events.sql`).
+2. Start backend:
+   ```bash
+   cd backend
+   go run .
+   ```
+3. Start frontend:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
 
-*See `/backend/README.md` for the full comprehensive list.*
+## Demo Credentials
 
-* `POST /api/auth/login` - Authenticate user & trigger 2FA if admin
-* `POST /api/auth/logout` - Terminate session & clear cookies
-* `POST /api/auth/otp/verify` - Verify 6-digit Admin OTP
-* `GET /api/customer/accounts` - View customer accounts & history
-* `POST /api/fd/open` - Open a new fixed deposit
-* `POST /api/customer/transfer` - Fund transfer between accounts (ACID)
-* `GET /api/reports/agents` - View agent performance KPI reports
+| Role | Username | Password | Notes |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin` | `Arkeshan2004` | Prompts for 6-digit email OTP |
+| **Agent (Batticaloa)** | `agent_achira` | `password123` | Assigned to Amal A & Nayana F |
+| **Agent (Trincomalee)** | `agent_ark` | `password123` | Assigned to Bimal B & Kasun G |
+| **Agent (Ampara)** | `agent_dinisiru` | `password123` | Assigned to Chathura C & Ruwan H |
+| **Agent (Batticaloa)** | `agent_nethmi` | `password123` | Assigned to Dilani D & Sandun I |
+| **Agent (Trincomalee)** | `agent_vimukthi` | `password123` | Assigned to Eranga E & Thilina J |
+| **Customer** | `cust_1` | `pass1` | Has active savings and fixed deposit accounts |
+| **Customer** | `cust_2` | `pass2` | Has active savings account |
 
-## Development Setup (Without Docker)
+## API Endpoints
 
-1. Start a local MySQL 8.0 instance.
-2. Execute the SQL files in `database/` in chronological order (1-schema.sql to 7-events.sql).
-3. Navigate to `/backend`, run `cp .env.example .env`, populate the variables, and start the API with `go run main.go`.
-4. Navigate to `/frontend`, run `npm install`, and start the development server with `npm run dev`.
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/auth/login` | Authenticate user (initiates 2FA for admin) | Public |
+| `POST` | `/api/auth/logout` | Terminate active session | Authenticated |
+| `POST` | `/api/auth/otp/verify` | Verify admin 2FA OTP | Admin |
+| `POST` | `/api/auth/password/change` | Change account password | Authenticated |
+| `GET` | `/api/customer/accounts` | Fetch customer accounts and history | Customer |
+| `POST` | `/api/customer/transfer` | Fund transfer between savings accounts | Customer |
+| `GET` | `/api/customer/agent` | Fetch assigned agent contact details | Customer |
+| `POST` | `/api/agent/customer/register` | Register customer identity (KYC) | Agent |
+| `POST` | `/api/agent/account/open` | Open savings account with initial deposit | Agent |
+| `POST` | `/api/fd/open` | Open fixed deposit | Agent |
+| `POST` | `/api/txn/deposit` | Process counter deposit | Agent |
+| `POST` | `/api/txn/withdraw` | Process counter withdrawal | Agent |
+| `GET` | `/api/agent/customers` | Fetch assigned customers and accounts | Agent |
+| `GET` | `/api/agent/ledger` | 30-day transaction ledger for agent | Agent |
+| `GET` | `/api/agent/stats` | Transaction count and volume summary | Agent |
+| `GET` | `/api/reports/agents` | View management reports (supports CSV export) | Admin |
 
----
+## Database Components
 
-## Architecture & Project Structure
-
-* `/frontend` Next.js client pages (Customer portal, Agent portal, Admin reports, Login)
-* `/backend` Go net/http RESTful microbanking backend service
-* `/database` MySQL schema, triggers, views, stored procedures, and seed datasets
-
-## Progress Summary
-
-* [x] Core Authentication & Session Management (Customer, Staff, Admin)
-* [x] Admin Two-Factor Authentication (Email OTP with 5-minute cooldown & persistent timer)
-* [x] Safe Admin Logout (Cookie invalidation + database session removal)
-* [x] Customer Dashboard & Account Services (Savings, Transfers, masked holder lookup)
-* [x] Customer FD View-Only Mode (Restricted from originating FDs online, redirected to agents)
-* [x] Agent Portal Module 1: Layout Shell & Navigation
-* [x] Agent Portal Module 3: Account Origination & Association (Adult, Child, Teen, Senior, Joint accounts with decimal transactions)
-* [x] Admin Reports Dashboard (5 Management Views & CSV Export)
-* [x] Full Docker Containerization for MySQL, Go Backend, and Next.js Frontend
-* [x] Tri-Cloud Production Deployment (Aiven MySQL + Render Go API + Vercel Next.js)
-* [x] Resend HTTPS Email Dispatch (Firewall-immune OTP delivery over port 443)
-
-## Recent Updates
-
-### October 8–9, 2026 (Arkeshan)
-
-* **Customer Search Route Unification:** Resolved a critical route collision on `/api/agent/customer/search` by implementing unified query parameter routing (supporting both `?nic=` for Guardian-aware savings account origination and `?username=` for Fixed Deposit origination).
-* **Cross-Origin Auth & CORS Hardening:** Updated `GetStaffPersonID` in `backend/auth.go` to prioritize headers over cookies, eliminating cross-domain drops.
-* **Cloud Architecture Deployment:** Successfully migrated database to **Aiven Cloud MySQL**, containerized the backend on **Render.com**, and deployed the frontend to **Vercel** (`btrust2.vercel.app`).
-* **Resend HTTPS OTP Integration:** Implemented HTTPS API email dispatch in `backend/otp.go` to bypass cloud firewall blocks on SMTP port 587.
-* **Root URL Auto-Redirect:** Added server-side auto-redirect from `/` to `/login` with zero client-side latency.
-* **Resilient Cloud Error Handling:** Sanitized `BACKEND_URL` rewrite proxying and hardened login UI against raw `<!DOCTYPE` syntax errors during cold backend starts.
-
-### October 6, 2026 (Arkeshan)
-
-* **Admin Email OTP 2FA, Rate Limiting, and Safe Logout** implemented by **Arkeshan**.
-* Detailed implementation report available in 
-[arkeshan_final_implementation_report.md]
-(./arkeshan_final_implementation_report.md).
+- **Trigger (`before_transaction_insert`):** Validates balance and minimum balance constraints on withdrawals, and updates account balance atomically on deposits and withdrawals.
+- **Stored Procedure (`ProcessFDInterest`):** Calculates and credits monthly interest for active fixed deposits.
+- **Event (`monthly_fd_interest_event`):** Runs interest calculation on a monthly schedule.
+- **Views:** Predefined reporting views for agent performance, account summary, active FD payouts, and customer activity.
