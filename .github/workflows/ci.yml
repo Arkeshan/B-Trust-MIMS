@@ -2,7 +2,7 @@ name: B-Trust MIMS CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, fix_bugs ]
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
