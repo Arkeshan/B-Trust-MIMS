@@ -30,7 +30,7 @@ interface FixedDeposit {
   plan: FDPlan;
   investment: number;
   start_date: string;
-  maturity_date: string;
+  due_date: string;
   next_payout_date: string;
   interest_paid_so_far: number;
 }

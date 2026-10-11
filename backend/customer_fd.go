@@ -26,7 +26,7 @@ type FixedDeposit struct {
 	Plan              FDPlan          `json:"plan"`
 	Investment        decimal.Decimal `json:"investment"`
 	StartDate         time.Time       `json:"start_date"`
-	MaturityDate      time.Time       `json:"maturity_date"`
+	DueDate           time.Time       `json:"due_date"`
 	NextPayoutDate    time.Time       `json:"next_payout_date"`
 	InterestPaidSoFar decimal.Decimal `json:"interest_paid_so_far"`
 }
@@ -74,7 +74,7 @@ func ListFDHandler(db *sql.DB) http.HandlerFunc {
 				&deposit.Plan.TermMonths,
 				&deposit.Investment,
 				&deposit.StartDate,
-				&deposit.MaturityDate,
+				&deposit.DueDate,
 				&deposit.NextPayoutDate,
 				&deposit.InterestPaidSoFar,
 			); err != nil {
