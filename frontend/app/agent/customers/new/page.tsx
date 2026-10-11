@@ -287,13 +287,7 @@ export default function NewCustomerPage() {
                   htmlFor={nicId}
                   className="block text-xs font-bold uppercase tracking-wider text-[#001F3F]"
                 >
-<<<<<<< HEAD
-                  {isMinor
-                    ? "Guardian's National Identity Card *"
-                    : "National Identity Card *"}
-=======
                   National Identity Card (12 Characters) {isMinor ? "(Optional for Minor)" : "*"}
->>>>>>> 71152e0 (feat(kyc): enter the 12 character limit for NIC)
                 </label>
                 <input
                   id={nicId}
@@ -301,19 +295,13 @@ export default function NewCustomerPage() {
                   required={!isMinor}
                   maxLength={12}
                   value={nic}
-<<<<<<< HEAD
-                  onChange={(e) => setNic(e.target.value)}
-                  placeholder={
-                    isMinor ? "Not required for minors" : "e.g. 199012345678"
-                  }
-                  className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20"
-=======
                   onChange={(e) =>
                     setNic(e.target.value.replace(/[^0-9a-zA-Z]/g, "").slice(0, 12))
                   }
-                  placeholder={isMinor ? "Not required for minors" : "e.g. 199012345678"}
+                  placeholder={
+                    isMinor ? "Not required for minors" : "e.g. 199012345678"
+                  }
                   className="mt-1.5 block w-full rounded-xl border border-gray-300 bg-[#F9FAFB] px-3.5 py-2.5 text-sm text-[#000000] placeholder-gray-400 outline-none transition focus:border-[#06B6D4] focus:bg-white focus:ring-2 focus:ring-[#06B6D4]/20 font-mono"
->>>>>>> 71152e0 (feat(kyc): enter the 12 character limit for NIC)
                 />
               </div>
 
