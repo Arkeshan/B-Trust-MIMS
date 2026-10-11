@@ -79,21 +79,13 @@ Microbanking and interest management web application supporting customer interne
    cd B-Trust-MIMS
    ```
 
-2. Copy environment file:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Build and run containers:
+2. Build and run containers:
    ```bash
    docker compose up --build
    ```
 
-4. Open the application:
-   - Web application: https://localhost (accept local self-signed certificate)
-   - Frontend direct: http://localhost:3000
-   - Backend API direct: http://localhost:8080
-   - MySQL: localhost:3307
+3. Open the application:
+   - http://localhost:3000/
 
 To reset the database with seed data:
 ```bash
@@ -113,7 +105,6 @@ docker compose up --build
 2. Start backend:
    ```bash
    cd backend
-   cp .env.example .env
    go run .
    ```
 3. Start frontend:
@@ -163,7 +154,3 @@ docker compose up --build
 - **Stored Procedure (`ProcessFDInterest`):** Calculates and credits monthly interest for active fixed deposits.
 - **Event (`monthly_fd_interest_event`):** Runs interest calculation on a monthly schedule.
 - **Views:** Predefined reporting views for agent performance, account summary, active FD payouts, and customer activity.
-
-## License
-
-This project is licensed under the MIT License.
