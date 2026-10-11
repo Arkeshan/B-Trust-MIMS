@@ -8,7 +8,6 @@ interface FDStatus {
     account_no: string;
     investment: number;
     start_date: string;
-    maturity_date?: string;
     due_date?: string;
     elapsed_months: number;
     interest_rate: number;
