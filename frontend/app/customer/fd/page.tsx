@@ -18,21 +18,9 @@ import ActiveFD from "./components/ActiveFD";
 
 // Type
 
-interface FDPlan {
-  fd_plan_id: number;
-  interest_rate: number;
-  term_months: number;
-}
-
 interface FixedDeposit {
   fd_acc_no: string;
   account_no: string;
-  plan: FDPlan;
-  investment: number;
-  start_date: string;
-  due_date: string;
-  next_payout_date: string;
-  interest_paid_so_far: number;
 }
 
 

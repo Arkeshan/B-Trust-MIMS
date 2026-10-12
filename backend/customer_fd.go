@@ -21,14 +21,8 @@ type FDPlan struct {
 
 // FixedDeposit is the full FD record returned to the client.
 type FixedDeposit struct {
-	FDAccNo           string          `json:"fd_acc_no"`
-	AccountNo         string          `json:"account_no"`
-	Plan              FDPlan          `json:"plan"`
-	Investment        decimal.Decimal `json:"investment"`
-	StartDate         time.Time       `json:"start_date"`
-	DueDate           time.Time       `json:"due_date"`
-	NextPayoutDate    time.Time       `json:"next_payout_date"`
-	InterestPaidSoFar decimal.Decimal `json:"interest_paid_so_far"`
+	FDAccNo   string `json:"fd_acc_no"`
+	AccountNo string `json:"account_no"`
 }
 
 // ListFDHandler handles GET /api/fd/list and returns all fixed deposits.
@@ -46,17 +40,12 @@ func ListFDHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		rows, err := db.QueryContext(r.Context(), `
-			SELECT fd.fd_acc_no, fd.account_no, fd.fd_plan_id,
-			       plan.interest_rate, plan.term_months, fd.investment,
-			       fd.start_date,
-			       DATE_ADD(fd.start_date, INTERVAL plan.term_months MONTH),
-			       fd.next_payout_date, fd.interest_paid_to_date
-			FROM FIXED_DEPOSIT AS fd
-			JOIN FD_PLAN AS plan ON plan.fd_plan_id = fd.fd_plan_id
-			JOIN ACCOUNT_HOLDER ah ON ah.account_no = fd.account_no
+			SELECT v.fd_acc_no, v.account_no
+			FROM vw_fd_status AS v
+			JOIN ACCOUNT_HOLDER ah ON ah.account_no = v.account_no
 			JOIN CUSTOMER c ON c.person_id = ah.person_id
 			WHERE c.username = ?
-			ORDER BY fd.next_payout_date, fd.fd_acc_no`, username)
+			ORDER BY v.next_payout_date, v.fd_acc_no`, username)
 		if err != nil {
 			writeFDError(w, http.StatusInternalServerError, "could not fetch fixed deposits")
 			return
@@ -69,14 +58,6 @@ func ListFDHandler(db *sql.DB) http.HandlerFunc {
 			if err := rows.Scan(
 				&deposit.FDAccNo,
 				&deposit.AccountNo,
-				&deposit.Plan.FDPlanID,
-				&deposit.Plan.InterestRate,
-				&deposit.Plan.TermMonths,
-				&deposit.Investment,
-				&deposit.StartDate,
-				&deposit.DueDate,
-				&deposit.NextPayoutDate,
-				&deposit.InterestPaidSoFar,
 			); err != nil {
 				writeFDError(w, http.StatusInternalServerError, "could not read fixed deposit")
 				return
@@ -101,7 +82,7 @@ type CronInterestResponse struct {
 	Message      string    `json:"message"`
 }
 
-// It calls the MySQL stored procedure ProcessFDInterest() and returns the summary.
+// It calls the MySQL stored procedure ProcessFDInterest() and returns the summary mainly for testing .
 func CronInterestHandler(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
