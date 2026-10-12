@@ -132,21 +132,33 @@ docker compose up --build
 | Method | Endpoint | Description | Access |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/auth/login` | Authenticate user (initiates 2FA for admin) | Public |
-| `POST` | `/api/auth/logout` | Terminate active session | Authenticated |
 | `POST` | `/api/auth/otp/verify` | Verify admin 2FA OTP | Admin |
-| `POST` | `/api/auth/password/change` | Change account password | Authenticated |
-| `GET` | `/api/customer/accounts` | Fetch customer accounts and history | Customer |
-| `POST` | `/api/customer/transfer` | Fund transfer between savings accounts | Customer |
+| `POST` | `/api/auth/otp/resend` | Resend 2FA verification code (5-min cooldown) | Admin |
+| `POST` | `/api/auth/password/change` | Change customer account password | Authenticated |
+| `POST` | `/api/auth/logout` | Terminate active session | Authenticated |
+| `GET` | `/api/customer/accounts` | Fetch customer accounts and balances | Customer |
+| `GET` | `/api/account/lookup?account_no=` | Lookup recipient account holder name with masking | Customer |
+| `POST` | `/api/customer/transfer` | Fund transfer between savings accounts (ACID) | Customer |
+| `GET` | `/api/account/:id/history` | Paginated transaction history for account | Customer |
+| `GET` | `/api/account/:id/history/recent` | 7-day rolling transaction history | Customer |
 | `GET` | `/api/customer/agent` | Fetch assigned agent contact details | Customer |
-| `POST` | `/api/agent/customer/register` | Register customer identity (KYC) | Agent |
+| `GET` | `/api/customer/profile` | Fetch customer profile information | Customer |
+| `POST` | `/api/agent/customer/register` | Register customer identity (KYC with guardian) | Agent |
+| `GET` | `/api/agent/customer/search?nic=` | Guardian-aware customer NIC prefix search | Agent |
+| `GET` | `/api/agent/plans` | Fetch savings account plan tiers and minimums | Agent |
 | `POST` | `/api/agent/account/open` | Open savings account with initial deposit | Agent |
-| `POST` | `/api/fd/open` | Open fixed deposit | Agent |
-| `POST` | `/api/txn/deposit` | Process counter deposit | Agent |
-| `POST` | `/api/txn/withdraw` | Process counter withdrawal | Agent |
+| `POST` | `/api/fd/open` | Open fixed deposit linked to savings account | Agent |
+| `GET` | `/api/fd/list` | List active fixed deposit contracts | Agent |
+| `GET` | `/api/fd/status/:id` | Retrieve progress and maturity of fixed deposit | Agent |
+| `POST` | `/api/cron/interest` | Trigger interest calculation procedure | Agent |
+| `POST` | `/api/txn/deposit` | Process counter deposit (updates via trigger) | Agent |
+| `POST` | `/api/txn/withdraw` | Process counter withdrawal (checks min balance) | Agent |
+| `GET` | `/api/agent/lookup?nic=` | Quick customer lookup by NIC for counter ops | Agent |
 | `GET` | `/api/agent/customers` | Fetch assigned customers and accounts | Agent |
 | `GET` | `/api/agent/ledger` | 30-day transaction ledger for agent | Agent |
 | `GET` | `/api/agent/stats` | Transaction count and volume summary | Agent |
-| `GET` | `/api/reports/agents` | View management reports (supports CSV export) | Admin |
+| `GET` | `/api/agent/profile` | Retrieve agent profile and branch assignment | Agent |
+| `GET` | `/api/reports/:type` | Management reports (agents, accounts, FDs, CSV) | Admin |
 
 ## Database Components
 

@@ -54,18 +54,28 @@ Runs before insert on TRANSACTION.
 ### process_fd_interest_event (Nimthara)
 Runs daily at midnight (00:00:00) to execute ProcessFDInterest().
 
-## Indexes (indexes.sql) (Achira)
+## Indexes (indexes.sql, schema.sql) (Achira, Arkeshan)
 
-- idx_user_account_username on USER_ACCOUNT(username)
-- idx_user_account_email on USER_ACCOUNT(email)
-- idx_user_account_type_status on USER_ACCOUNT(type, status)
-- idx_savings_account_status on SAVINGS_ACCOUNT(status)
-- idx_customer_username on CUSTOMER(username)
-- idx_staff_username on STAFF(username)
+### Secondary B+ Tree Indexes (indexes.sql)
+- `idx_savings_account_no` on `SAVINGS_ACCOUNT(account_no)` - Fast balance and status lookup
+- `idx_transaction_account_no` on `TRANSACTION(account_no)` - Accelerates ledger and transaction history queries
+- `idx_person_id` on `PERSON(person_id)` - Rapid personal demographic joins
+- `idx_customer_person_id` on `CUSTOMER(person_id)` - Customer profile and agent relationship resolution
+- `idx_branch_id` on `BRANCH(branch_id)` - Branch routing and reporting lookups
+
+### Unique Constraints & Natural Keys (schema.sql)
+- `UNIQUE (username)` on `USER_ACCOUNT(username)`
+- `UNIQUE (email)` on `USER_ACCOUNT(email)`
+- `UNIQUE (account_no)` on `FIXED_DEPOSIT(account_no)` - Enforces regulatory rule: max 1 FD contract per savings account
+- Composite Primary Key `(person_id, account_no)` on `ACCOUNT_HOLDER` - Enforces distinct holder mappings
 
 ## Seeds (seed_accounts.sql, seed_auth.sql) (Arkeshan)
 
-Initial test data: branches, staff, customers (including joint accounts), FDs, and sample transactions.
+Initial test database fixtures:
+- **5 Bank Branches:** Batticaloa, Trincomalee, Ampara, Colombo, Kandy
+- **5 Active Agents (2004 Birth Dates):** `agent_achira`, `agent_ark`, `agent_dinisiru`, `agent_nethmi`, `agent_vimukthi`
+- **Customer Personas:** Across all 5 savings plan types (Children, Teen, Adult, Senior, Joint), linking minors to guardians
+- **Financial Ledgers:** Active Fixed Deposits (6-month, 12-month) and sample deposit/withdrawal transactions
 
 ## Cloud Deployment (Aiven Cloud) (Arkeshan)
 
