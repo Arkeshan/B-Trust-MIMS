@@ -138,6 +138,10 @@ func AgentCustomersHandler(db *sql.DB) http.HandlerFunc {
 			}
 			customerMap[personID].Accounts = append(customerMap[personID].Accounts, acc)
 		}
+		if err := rows.Err(); err != nil {
+			writeFDError(w, http.StatusInternalServerError, "could not fetch customers")
+			return
+		}
 
 		// Build ordered result
 		result := make([]CustomerInfo, 0, len(customerOrder))
@@ -193,6 +197,10 @@ func AgentLedgerHandler(db *sql.DB) http.HandlerFunc {
 				continue
 			}
 			ledger = append(ledger, row)
+		}
+		if err := rows.Err(); err != nil {
+			writeFDError(w, http.StatusInternalServerError, "could not fetch ledger")
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
