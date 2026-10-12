@@ -9,7 +9,7 @@ Uses InnoDB for ACID compliance, foreign keys, row locking, and triggers.
 - PERSON: personal details (name, phone, address) - Achira
 - BRANCH: bank branches - Dinisuru
 - ACCOUNT_PLAN: savings plans, min balance, interest rates - Nimthara
-- FD_PLAN: fixed deposit plans (6, 12, 36 months) - Sathika
+- FD_PLAN: fixed deposit plans (6, 12, 36 months) - Vimukthi
 - STAFF: branch staff and agents - Arkeshan
 - CUSTOMER: customers assigned to an agent - Arkeshan
 - SAVINGS_ACCOUNT: savings accounts, balances, plan id - Arkeshan
@@ -22,12 +22,12 @@ Uses InnoDB for ACID compliance, foreign keys, row locking, and triggers.
 
 ## Views (views.sql)
 
-- vw_login_auth: user credentials, password hash, role, status for login verification - Sathika
-- vw_agent_transaction_summary: count and volume of transactions per agent - Sathika
-- vw_account_transaction_summary: summary of deposits, withdrawals, interest per account - Sathika
-- vw_active_fd_payouts: active FDs due for payout - Sathika
-- vw_monthly_interest_by_account_type: interest payouts grouped by account type - Sathika
-- vw_customer_activity: deposit/withdrawal totals per customer - Sathika
+- vw_login_auth: user credentials, password hash, role, status for login verification - Vimukthi
+- vw_agent_transaction_summary: count and volume of transactions per agent - Vimukthi
+- vw_account_transaction_summary: summary of deposits, withdrawals, interest per account - Vimukthi
+- vw_active_fd_payouts: active FDs due for payout - Vimukthi
+- vw_monthly_interest_by_account_type: interest payouts grouped by account type - Vimukthi
+- vw_customer_activity: deposit/withdrawal totals per customer - Vimukthi
 - vw_fd_status: active FD details, elapsed months, interest earned so far - Dinisuru
 - vw_recent_txn: transactions from the last 7 days - Achira
 
