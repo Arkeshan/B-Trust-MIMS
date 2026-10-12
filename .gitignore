@@ -9,6 +9,7 @@ backend/*.exe
 *.exe
 btrust-backend
 btrust-backend.exe
+*.zip
 
 # Node & Next.js
 node_modules/
@@ -26,3 +27,13 @@ Thumbs.db
 .idea/
 .gemini/
 
+# Internal Viva Preparation & Planning Documents (Local Only)
+ARKESHAN_VIVA_MASTER_GUIDE.md
+ARKESHAN_VIVA_SLIDES.md
+TEAM_VIVA_SLIDES.md
+LIVE_DEMO_PLAN.md
+Agent_Portal_Assignments.md
+final_sprint_plan.md
+arkeshan_final_implementation_report.md
+frontend/AGENTS.md
+CONTRIBUTORS.md
