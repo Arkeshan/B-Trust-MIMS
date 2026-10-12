@@ -7,7 +7,7 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
 
 - `/` (`app/page.tsx`) - Arkeshan
   Zero-latency server-side redirect to `/login` ensuring the base domain lands directly on the banking application.
-- `/login` (`app/login/page.tsx`) - Achira, Sathika, Arkeshan
+- `/login` (`app/login/page.tsx`) - Achira, Vimukthi, Arkeshan
   Unified login portal with 2FA email verification modal:
   - Role-based redirects: customer -> `/customer/dashboard`, staff -> `/agent/dashboard`, admin -> `/admin/reports`
   - Two-Factor Authentication (OTP): 6-digit code validation with persistent 5-minute timer surviving page reloads
@@ -26,7 +26,7 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
   Minimalist 3-row wizard for account origination (plan selection, initial deposit, customer NIC search & association).
 - `/admin/layout.tsx` - Dinisuru, Arkeshan
   Admin portal shell with sidebar navigation and session guard checking admin role.
-- `/admin/reports` (`app/admin/reports/page.tsx`) - Sathika, Arkeshan
+- `/admin/reports` (`app/admin/reports/page.tsx`) - Vimukthi, Arkeshan
   5 management reports tabs (Agent Summary, Account Summary, Active FDs, Monthly Interest, Customer Activity) with CSV download.
 
 ## Components

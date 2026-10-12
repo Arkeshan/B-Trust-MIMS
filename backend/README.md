@@ -8,7 +8,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 ## Endpoints
 
 - GET / - Health check (Arkeshan)
-- POST /api/auth/login - User login with bcrypt and 2FA trigger (Achira, Sathika, Arkeshan)
+- POST /api/auth/login - User login with bcrypt and 2FA trigger (Achira, Vimukthi, Arkeshan)
 - POST /api/auth/otp/verify - Verify 6-digit OTP and create authenticated session (Arkeshan)
 - POST /api/auth/otp/resend - Resend 2FA verification code with 5-minute cooldown (Arkeshan)
 - POST /api/auth/logout - User logout, deletes session from DB and clears cookie (Arkeshan)
@@ -21,7 +21,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 - GET /api/fd/list - List fixed deposits (Dinisuru)
 - GET /api/fd/status/{id} - Get status of a fixed deposit (Dinisuru)
 - POST /api/cron/interest - Manually run the interest payout procedure (Dinisuru)
-- GET /api/reports/{type} - Get report data (agents, accounts, fds, monthly-interest, customers) (Sathika)
+- GET /api/reports/{type} - Get report data (agents, accounts, fds, monthly-interest, customers) (Vimukthi)
 - GET /api/agent/plans - List savings account plans (Arkeshan)
 - GET /api/agent/lookup?nic= - Quick customer lookup by NIC for teller counter (Arkeshan)
 - GET /api/agent/customer/search?nic=&username= - Unified search: Guardian-aware NIC search for savings origination (Arkeshan) and username search for FD origination (Dinisuru)
@@ -43,7 +43,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 - AccountHistoryHandler: paginated account transaction list
 - maskName: helper to mask names
 
-### auth.go (Achira, Sathika, Arkeshan)
+### auth.go (Achira, Vimukthi, Arkeshan)
 - LoginHandler: checks username and password against db using bcrypt, triggers 2FA for admin accounts, sets session
 - LogoutHandler: deletes active session from USER_SESSION and expires session_id cookie
 - getAuthenticatedUser: reads session token from header or cookie
@@ -62,7 +62,7 @@ Runs on port 8080 (or PORT env). Connects to MySQL using config from .env with p
 - FDStatusHandler: returns FD progress from vw_fd_status
 - CronInterestHandler: calls ProcessFDInterest stored procedure
 
-### reports.go (Sathika)
+### reports.go (Vimukthi)
 - ReportsHandler: maps report type to SQL views and returns json data
 - reportTypeFromPath: helper to grab report name from URL
 - rowsToMaps: helper to convert sql rows to map slice
