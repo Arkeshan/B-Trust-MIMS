@@ -86,6 +86,13 @@ func ListAccountPlansHandler(db *sql.DB) http.HandlerFunc {
 			}
 			plans = append(plans, p)
 		}
+		if err := rows.Err(); err != nil {
+			log.Printf("Error iterating ACCOUNT_PLAN rows: %v\n", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Database error loading account plans"})
+			return
+		}
 
 		if plans == nil {
 			plans = []AccountPlan{}
@@ -185,6 +192,14 @@ func SearchCustomerByNICHandler(db *sql.DB) http.HandlerFunc {
 				return
 			}
 			results = append(results, res)
+		}
+
+		if err := rows.Err(); err != nil {
+			log.Printf("Error iterating customer search results: %v\n", err)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(ErrorResponse{Error: "Error reading customer search results"})
+			return
 		}
 
 		if results == nil {

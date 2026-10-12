@@ -38,6 +38,10 @@ func AgentCustomerLookupHandler(db *sql.DB) http.HandlerFunc{
 			}
 			results = append(results,item)
 		}
+		if err := rows.Err(); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		if results==nil{
 			results= []CustomerLookupItem{}
 		}

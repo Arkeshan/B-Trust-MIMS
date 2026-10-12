@@ -334,9 +334,19 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			accounts := make([]EligibleAccount, 0)
 			for rows.Next() {
 				var acc EligibleAccount
-				if err := rows.Scan(&acc.AccountNo, &acc.Balance, &acc.PlanName); err == nil {
-					accounts = append(accounts, acc)
+				if err := rows.Scan(&acc.AccountNo, &acc.Balance, &acc.PlanName); err != nil {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": "could not read accounts"})
+					return
 				}
+				accounts = append(accounts, acc)
+			}
+			if err := rows.Err(); err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "could not read accounts"})
+				return
 			}
 
 			w.Header().Set("Content-Type", "application/json")
@@ -390,9 +400,19 @@ func AgentCustomerSearchHandler(db *sql.DB) http.HandlerFunc {
 			accounts := make([]EligibleAccount, 0)
 			for rows.Next() {
 				var acc EligibleAccount
-				if err := rows.Scan(&acc.AccountNo, &acc.Balance); err == nil {
-					accounts = append(accounts, acc)
+				if err := rows.Scan(&acc.AccountNo, &acc.Balance, &acc.PlanName); err != nil {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusInternalServerError)
+					json.NewEncoder(w).Encode(map[string]string{"error": "could not read accounts"})
+					return
 				}
+				accounts = append(accounts, acc)
+			}
+			if err := rows.Err(); err != nil {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": "could not read accounts"})
+				return
 			}
 
 			w.Header().Set("Content-Type", "application/json")
