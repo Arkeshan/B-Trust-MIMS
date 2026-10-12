@@ -20,10 +20,22 @@ Uses Lucide icons. Rewrites `/api/*` requests to the Go backend at `http://local
   Open new fixed deposit with eligible account dropdown (filters out accounts that already have an FD), and view active FDs.
 - `/customer/transfer` (`app/customer/transfer/page.tsx`) - Arkeshan
   3-row transfer form: recipient account lookup with masked name, balance check, transfer receipt with reference code.
-- `/agent/transfer` (`app/agent/transfer/page.tsx`) - Arkeshan
-  Counter deposit and withdrawal form for bank agents.
+- `/customer/settings` (`app/customer/settings/page.tsx`) - Nethmi
+  Customer security management and password change modal.
+- `/agent/layout.tsx` - Achira
+  Agent portal shell with persistent sidebar navigation, branch badge, and session controls.
+- `/agent/dashboard` (`app/agent/dashboard/page.tsx`) - Achira
+  Agent dashboard with quick action cards for origination, counter, and portfolio lookup.
+- `/agent/customers/new` (`app/agent/customers/new/page.tsx`) - Vimukthi
+  Customer KYC registration wizard with 12-character NIC validation and conditional minor guardian linkage.
 - `/agent/accounts/new` (`app/agent/accounts/new/page.tsx`) - Arkeshan
-  Minimalist 3-row wizard for account origination (plan selection, initial deposit, customer NIC search & association).
+  Account origination wizard with guardian-aware search, age checks, and multi-holder joint support.
+- `/agent/fd/new` (`app/agent/fd/new/page.tsx`) - Dinisuru
+  Agent fixed deposit opening wizard linked to eligible customer savings accounts.
+- `/agent/transfer` (`app/agent/transfer/page.tsx`) - Arkeshan, Nimthara
+  Teller counter deposit and withdrawal form for bank agents with printable transaction receipts.
+- `/agent/portfolio` (`app/agent/portfolio/page.tsx`) - Dinisuru
+  Agent portfolio page featuring assigned customer tree, account balances, and 30-day transaction ledger.
 - `/admin/layout.tsx` - Dinisuru, Arkeshan
   Admin portal shell with sidebar navigation and session guard checking admin role.
 - `/admin/reports` (`app/admin/reports/page.tsx`) - Vimukthi, Arkeshan
