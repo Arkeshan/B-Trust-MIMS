@@ -28,7 +28,7 @@ Microbanking and interest management web application supporting customer interne
 | Team Member | Role / Responsibilities |
 | :--- | :--- |
 | **Arkeshan S** | System architecture, database schema, transaction triggers, account origination, fund transfers, admin 2FA, Docker setup |
-| **Achira Ayumal** | Agent portal shell, person identity schema, database indexing, authentication, recent transactions |
+| **Achira Ayomal** | Agent portal shell, person identity schema, database indexing, authentication, recent transactions |
 | **Dinisiru Sangadith** | Fixed deposit management, interest calculation stored procedure, agent portfolio, 30-day ledger |
 | **Nethmi Dissanayake** | Teller counter operations, interest distribution event scheduler, customer settings, password management |
 | **Vimukthi Senanayake** | Customer registration and guardian verification, admin reporting views, CSV export |
@@ -41,7 +41,7 @@ Microbanking and interest management web application supporting customer interne
 - **Frontend:** Customer transfer page with recipient lookup and receipt display. Agent account origination form (adult, child, senior, joint accounts).
 - **Deployment:** Docker and Docker Compose configuration with Nginx reverse proxy. Deployment setup for Vercel, Render, and Aiven MySQL.
 
-#### Achira Ayumal
+#### Achira Ayomal
 - **Database:** `PERSON` table schema for personal records. Database indexing on lookup columns (`idx_username`, `idx_email`, `idx_account_no`). Rolling transaction view `vw_recent_txn`.
 - **Backend:** Login handler (`LoginHandler`) with bcrypt authentication and password validation. Staff ID resolution helper (`GetStaffPersonID`). 7-day rolling transaction history handler (`RecentHistoryHandler`).
 - **Frontend:** Agent portal layout and sidebar navigation (`agent/layout.tsx`). Agent header with session display and logout. Customer recent transaction history component.
