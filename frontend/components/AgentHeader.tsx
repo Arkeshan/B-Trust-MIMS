@@ -4,12 +4,22 @@ import { useRouter } from "next/navigation";
 
 export default function AgentHeader() {
   const [username, setUsername] = useState("");
+  const [branchName, setBranchName] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     // Reads the username from localStorage saved during login
     const storedUser = localStorage.getItem("username");
     if (storedUser) setUsername(storedUser);
+    const token = localStorage.getItem("session_id") || "";
+    fetch("/api/agent/profile", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.branch_name) setBranchName(data.branch_name);
+      })
+      .catch((err) => console.error("Could not fetch branch profile", err));
   }, []);
 
   const handleLogout = async () => {
@@ -28,7 +38,7 @@ export default function AgentHeader() {
 
   return (
     <header className="bg-white h-16 shadow flex justify-between items-center px-6">
-      <div className="font-semibold text-gray-700">Branch: Colombo Central</div>
+      <div className="font-semibold text-gray-700"> {branchName ? `Branch: ${branchName}` : ""}</div>
       <div className="flex items-center gap-4">
         <span className="text-gray-600">Welcome, {username}</span>
         <button 
