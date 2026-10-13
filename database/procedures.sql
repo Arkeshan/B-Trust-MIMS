@@ -1,4 +1,3 @@
-
 DELIMITER $$
 
 DROP PROCEDURE IF EXISTS ProcessFDInterest$$
@@ -10,8 +9,6 @@ BEGIN
     DECLARE v_account_no       VARCHAR(12);
     DECLARE v_investment       DECIMAL(15,2);
     DECLARE v_annual_rate      DECIMAL(5,2);
-    DECLARE v_term_months      INT;
-    DECLARE v_start_date       DATE;
     DECLARE v_next_payout_date DATE;
 
     DECLARE v_maturity_date    DATE;
@@ -24,16 +21,15 @@ BEGIN
 
     DECLARE cur_fd CURSOR FOR
         SELECT
-            fd.fd_acc_no,
-            fd.account_no,
-            fd.investment,
-            fp.interest_rate,
-            fp.term_months,
-            fd.start_date,
-            fd.next_payout_date
-        FROM FIXED_DEPOSIT fd
-        JOIN FD_PLAN fp ON fd.fd_plan_id = fp.fd_plan_id
-        WHERE fd.next_payout_date <= CURDATE();
+            fd_acc_no,
+            account_no,
+            investment,
+            interest_rate,
+            due_date,
+            next_payout_date
+        FROM vw_fd_status
+        WHERE next_payout_date <= CURDATE()
+          AND next_payout_date <= due_date;
 
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = TRUE;
 
@@ -53,15 +49,12 @@ BEGIN
             v_account_no,
             v_investment,
             v_annual_rate,
-            v_term_months,
-            v_start_date,
+            v_maturity_date,
             v_next_payout_date;
 
         IF v_done THEN
             LEAVE fd_loop;
         END IF;
-
-        SET v_maturity_date = DATE_ADD(v_start_date, INTERVAL v_term_months MONTH);
 
         IF v_next_payout_date > v_maturity_date THEN
             SET v_skipped_count = v_skipped_count + 1;
@@ -102,10 +95,7 @@ BEGIN
         UPDATE FIXED_DEPOSIT
         SET
             interest_paid_to_date = interest_paid_to_date + v_payout_amount,
-            next_payout_date      = LEAST(
-                                        DATE_ADD(v_next_payout_date, INTERVAL 30 DAY),
-                                        v_maturity_date
-                                    )
+            next_payout_date      = DATE_ADD(v_next_payout_date, INTERVAL 30 DAY)
         WHERE fd_acc_no = v_fd_acc_no;
 
         SET v_processed_count = v_processed_count + 1;
