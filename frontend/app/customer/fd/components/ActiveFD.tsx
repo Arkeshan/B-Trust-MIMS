@@ -151,7 +151,7 @@ export default function ActiveFD({ fdAccNo }: ActiveFDProps) {
                     <TrendingUp className="text-emerald-600" size={18} />
                     <div>
                         <p className="text-xs font-bold text-emerald-800 uppercase">Current Earned Interest</p>
-                        <p className="text-[#6B7280] text-xs">Rate: {status.interest_rate}% p.a.</p>
+                        <p className="text-[#6B7280] text-xs">Rate: {status.interest_rate}%</p>
                     </div>
                 </div>
                 <span className="text-lg font-bold text-emerald-600">

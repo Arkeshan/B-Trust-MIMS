@@ -94,7 +94,7 @@ FIXED_DEPOSIT.start_date,
 FD_PLAN.term_months,
 FD_PLAN.interest_rate,
 TIMESTAMPDIFF(MONTH, FIXED_DEPOSIT.start_date, CURDATE()) AS elapsed_months,
-round(FIXED_DEPOSIT.investment * (FD_PLAN.interest_rate / (100 * 12)) * (TIMESTAMPDIFF(MONTH, FIXED_DEPOSIT.start_date, CURDATE())), 2) AS current_interest,
+round(FIXED_DEPOSIT.investment * (FD_PLAN.interest_rate / 100) *(30/365) *(TIMESTAMPDIFF(MONTH, FIXED_DEPOSIT.start_date, CURDATE())), 2) AS current_interest,
 FIXED_DEPOSIT.start_date + INTERVAL FD_PLAN.term_months MONTH as due_date,
 FIXED_DEPOSIT.next_payout_date,
 FIXED_DEPOSIT.interest_paid_to_date
