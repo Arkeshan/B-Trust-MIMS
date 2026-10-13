@@ -177,15 +177,12 @@ export default function NewCustomerPage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-[#06B6D4]">
-                Agent Portal • KYC Onboarding
               </span>
             </div>
             <h1 className="text-3xl font-bold text-[#001F3F] tracking-tight">
               Register Customer Identity
             </h1>
             <p className="text-xs text-[#6B7280] mt-0.5">
-              Create a verified customer identity in B-Trust. Accounts and Fixed
-              Deposits can be opened once registered.
             </p>
           </div>
         </div>
@@ -211,7 +208,6 @@ export default function NewCustomerPage() {
                   1. Personal Details
                 </h2>
                 <p className="text-xs text-[#6B7280]">
-                  Legal identity and contact information
                 </p>
               </div>
 
@@ -371,7 +367,6 @@ export default function NewCustomerPage() {
                   2. User Account & Guardian
                 </h2>
                 <p className="text-xs text-[#6B7280]">
-                  Online portal credentials and minor guardianship
                 </p>
               </div>
 
